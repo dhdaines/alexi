@@ -6,6 +6,7 @@ from pdfplumber.utils.geometry import obj_to_bbox
 from alexi.convert import Converteur
 from alexi.extract import LABELMAP
 from alexi.recognize import Objets, bbox_contains
+from alexi.recognize.playa import ObjetsPlaya
 
 try:
     from alexi.recognize.yolo import ObjetsYOLO
@@ -22,6 +23,21 @@ DATADIR = Path(__file__).parent / "data"
 def test_extract_tables_and_figures() -> None:
     conv = Converteur(DATADIR / "pdf_figures.pdf")
     obj = Objets()
+    words = list(conv.extract_words())
+    images = list(obj(DATADIR / "pdf_figures.pdf", labelmap=LABELMAP))
+    assert len(images) == 2
+    table = next(img for img in images if img.type == "Tableau")
+    figure = next(img for img in images if img.type == "Figure")
+    for w in words:
+        if bbox_contains(table.bbox, obj_to_bbox(w)):
+            assert "Table" in w["tagstack"]
+        if bbox_contains(figure.bbox, obj_to_bbox(w)):
+            assert "Figure" in w["tagstack"]
+
+
+def test_extract_tables_and_figures_playa() -> None:
+    conv = Converteur(DATADIR / "pdf_figures.pdf")
+    obj = ObjetsPlaya()
     words = list(conv.extract_words())
     images = list(obj(DATADIR / "pdf_figures.pdf", labelmap=LABELMAP))
     assert len(images) == 2
@@ -67,5 +83,6 @@ def test_extract_tables_and_figures_docling() -> None:
 
 if __name__ == "__main__":
     test_extract_tables_and_figures()
+    test_extract_tables_and_figures_playa()
     test_extract_tables_and_figures_yolo()
     test_extract_tables_and_figures_docling()

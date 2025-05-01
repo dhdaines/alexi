@@ -17,6 +17,7 @@ dependencies = [
     "httpx",
     "lxml",
     "pdfplumber",
+    "playa-pdf",
     "scikit-learn",
     "sklearn-crfsuite",
     "lunr[languages]",
