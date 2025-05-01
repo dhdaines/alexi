@@ -12,11 +12,14 @@ Extraction des documents
 L'extraction de la structure et du contenu des documents se fait par
 cette série d'étapes:
 
-1. Mettre à jour le répertoire local des documents.  Ceci se fait avec
-   [wget](https://www.gnu.org/software/wget/) par la commande `alexi
-   download`.  Par défaut, tous les documents dans la section des
-   règlements d'urbanisme sont sélectionnés.  Il est conseillé d'utiliser
-   l'option `--exclude` pour exclure certains documents moins utiles:
+1. Mettre à jour le répertoire local des documents.  Ceci se fait
+   par la commande `alexi download`.  Par défaut, tous les documents PDF
+   dans la section des
+   règlements d'urbanisme sur le site web de la ville de Sainte-Adèle
+   sont sélectionnés.  Pour télécharger des documents d'un autre site,
+   utilisez l'option `--url`.  Il existe aussi
+   l'option `--exclude` pour exclure des documents selon une expression
+   régulière:
 
         alexi -v download --exclude=Plan --exclude=/derogation \
               --exclude='\d-[aA]dopt' --exclude='Z-\d'
