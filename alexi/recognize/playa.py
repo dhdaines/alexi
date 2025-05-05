@@ -44,11 +44,13 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
             _bbox=convert_bbox(el.page, bbox),
         )
     else:
-        # FIXME: Quite inefficient since we need to iterate over page
-        # for every element
+        # FIXME: Quite inefficient since we need to iterate over the
+        # page for every element
         for page, items in itertools.groupby(
             content_items(el), operator.attrgetter("page")
         ):
+            if page not in pages:
+                continue
             boxes = []
             mcids = set(x.mcid for x in items)
             for mcid, objs in itertools.groupby(page, operator.attrgetter("mcid")):
