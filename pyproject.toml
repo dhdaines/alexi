@@ -17,6 +17,7 @@ dependencies = [
     "httpx",
     "lxml",
     "pdfplumber",
+    "paves",
     "scikit-learn",
     "sklearn-crfsuite",
     "lunr[languages]",
@@ -41,9 +42,6 @@ yolo = [
 docling = [
     "docling-ibm-models>=3.3.1",
 ]
-playa = [
-    "playa-pdf",
-]
 api = [
     "fastapi[standard]",
 ]
@@ -64,7 +62,7 @@ testpaths = ["test"]
 addopts = "--cov=alexi --cov-report html"
 
 [tool.hatch.envs.default]
-features = [ "dev", "api", "docling", "playa" ]
+features = [ "dev", "api", "docling" ]
 
 [tool.hatch.envs.default.env-vars]
 # Avoid downloading gigabytes of CUDA junk
