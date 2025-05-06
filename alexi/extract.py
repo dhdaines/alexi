@@ -9,11 +9,11 @@ import json
 import logging
 import operator
 import os
-import playa
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, TextIO, Type, Union
 
 import paves.image as pi
+import playa
 from natsort import natsorted
 
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
@@ -197,7 +197,9 @@ def make_index_html(
         outfh.write(HTML_FOOTER)
 
 
-def save_images_from_pdf(blocs: list[Bloc], pdf_path: Path, docdir: Path):
+def save_images_from_pdf(
+    blocs: list[Bloc], pdf_path: Path, docdir: Path, dpi: int = 150
+):
     """Convertir des éléments du PDF difficiles à réaliser en texte en
     images et les insérer dans la structure du document (liste de blocs).
     """
@@ -207,19 +209,20 @@ def save_images_from_pdf(blocs: list[Bloc], pdf_path: Path, docdir: Path):
             assert isinstance(bloc.page_number, int)
             images.setdefault(bloc.page_number, []).append(bloc)
     pdf = playa.open(pdf_path)
+    scale = dpi / 72
     for page_number, image_blocs in images.items():
         page = pdf.pages[page_number - 1]
-        image = pi.show(page, dpi=150)
+        image = pi.show(page, dpi=dpi)
         for bloc in image_blocs:
             x0, top, x1, bottom = bloc.bbox
             if x0 == x1 or top == bottom:
                 LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
                 continue
-            x0 = max(0, x0)
-            top = max(0, top)
-            x1 = min(page.width, x1)
-            bottom = min(page.height, bottom)
-            fig = image.crop(tuple(c * 150 / 72 for c in (x0, top, x1, bottom)))
+            x0 = max(0, x0) * scale
+            top = max(0, top) * scale
+            x1 = min(page.width, x1) * scale
+            bottom = min(page.height, bottom) * scale
+            fig = image.crop((x0, top, x1, bottom))
             LOGGER.info("Extraction de %s", docdir / bloc.img)
             fig.save(docdir / bloc.img)
     pdf.close()
