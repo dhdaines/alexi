@@ -10,9 +10,6 @@ from operator import attrgetter
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Union
 
-import pypdfium2 as pdfium  # type: ignore
-import pypdfium2.raw as pdfium_c  # type: ignore
-
 from alexi.analyse import group_iob
 from alexi.convert import Converteur, write_csv
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
@@ -54,6 +51,9 @@ def annotate_pdf(
     """
     Marquer les blocs de texte extraits par ALEXI dans un PDF.
     """
+    import pypdfium2 as pdfium  # type: ignore
+    import pypdfium2.raw as pdfium_c  # type: ignore
+
     pdf = pdfium.PdfDocument(path)
     inpage = 0
     outpage = 0

@@ -8,13 +8,8 @@ from pathlib import Path
 from typing import List
 
 from bs4 import BeautifulSoup
-from lunr.index import Index  # type: ignore
-from lunr.languages import get_nltk_builder  # type: ignore
 
 from alexi.index import unifold
-
-# This is just here to register the necessary pipeline functions
-get_nltk_builder(["fr"])
 
 
 def get_pdf(soup: BeautifulSoup):
@@ -24,6 +19,12 @@ def get_pdf(soup: BeautifulSoup):
 
 
 def search(indexdir: Path, docdir: Path, terms: List[str], nresults: int) -> None:
+    from lunr.index import Index  # type: ignore
+    from lunr.languages import get_nltk_builder  # type: ignore
+
+    # This is just here to register the necessary pipeline functions
+    get_nltk_builder(["fr"])
+
     with open(indexdir / "index.json", "rt", encoding="utf-8") as infh:
         index = Index.load(json.load(infh))
     with open(indexdir / "textes.json", "rt", encoding="utf-8") as infh:
