@@ -4,12 +4,15 @@ Lancer des recherches dans l'index de données.
 
 import argparse
 import json
+import logging
 from pathlib import Path
 from typing import List
 
 from bs4 import BeautifulSoup
 
 from alexi.index import unifold
+
+LOGGER = logging.getLogger("index")
 
 
 def get_pdf(soup: BeautifulSoup):
@@ -19,11 +22,13 @@ def get_pdf(soup: BeautifulSoup):
 
 
 def search(indexdir: Path, docdir: Path, terms: List[str], nresults: int) -> None:
+    from lunr import get_default_builder  # type: ignore
     from lunr.index import Index  # type: ignore
-    from lunr.languages import get_nltk_builder  # type: ignore
+    from lunr.pipeline import Pipeline  # type: ignore
 
-    # This is just here to register the necessary pipeline functions
-    get_nltk_builder(["fr"])
+    # Register the necessary pipeline functions
+    Pipeline.register_function(unifold, "unifold")
+    get_default_builder("fr")
 
     with open(indexdir / "index.json", "rt", encoding="utf-8") as infh:
         index = Index.load(json.load(infh))
