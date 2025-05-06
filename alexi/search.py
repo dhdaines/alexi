@@ -4,26 +4,33 @@ Lancer des recherches dans l'index de données.
 
 import argparse
 import json
+import logging
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from bs4 import BeautifulSoup
-from lunr.index import Index  # type: ignore
-from lunr.languages import get_nltk_builder  # type: ignore
 
 from alexi.index import unifold
 
-# This is just here to register the necessary pipeline functions
-get_nltk_builder(["fr"])
+LOGGER = logging.getLogger("index")
 
 
-def get_pdf(soup: BeautifulSoup):
-    header = soup.select("article.Article > h4")[0]
-    link = header.select("a")[0]
-    return link.get("href")
+def get_pdf(soup: BeautifulSoup) -> Union[str, None]:
+    if header := soup.select("article.Article > h4"):
+        if link := header[0].select("a"):
+            return str(link[0].get("href"))
+    return None
 
 
 def search(indexdir: Path, docdir: Path, terms: List[str], nresults: int) -> None:
+    from lunr import get_default_builder  # type: ignore
+    from lunr.index import Index  # type: ignore
+    from lunr.pipeline import Pipeline  # type: ignore
+
+    # Register the necessary pipeline functions
+    Pipeline.register_function(unifold, "unifold")
+    get_default_builder("fr")
+
     with open(indexdir / "index.json", "rt", encoding="utf-8") as infh:
         index = Index.load(json.load(infh))
     with open(indexdir / "textes.json", "rt", encoding="utf-8") as infh:
@@ -36,7 +43,11 @@ def search(indexdir: Path, docdir: Path, terms: List[str], nresults: int) -> Non
         url, titre = docs[int(r["ref"])]
         with open(docdir / url) as infh:
             soup = BeautifulSoup(infh, features="lxml")
-            print(f"{get_pdf(soup)} {titre}")
+            pdf = get_pdf(soup)
+            if pdf:
+                print(f"{get_pdf(soup)} {titre}")
+            else:
+                print(titre)
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:

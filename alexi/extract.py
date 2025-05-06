@@ -10,7 +10,7 @@ import logging
 import operator
 import os
 from pathlib import Path
-from typing import Any, Iterable, TextIO, Type, Union
+from typing import TYPE_CHECKING, Any, Iterable, TextIO, Type, Union
 
 import pdfplumber
 from natsort import natsorted
@@ -21,11 +21,12 @@ from alexi.format import HtmlFormatter
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.link import Resolver
-from alexi.recognize import Objets
 from alexi.segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
 from alexi.segment import DEFAULT_MODEL_NOSTRUCT, Segmenteur
 from alexi.types import T_obj
 
+if TYPE_CHECKING:
+    from alexi.recognize import Objets
 LOGGER = logging.getLogger("extract")
 LABELMAP = {
     "Table": "Tableau",
@@ -355,7 +356,7 @@ def make_doc_tree(docs: list[Document], outdir: Path) -> dict[str, dict[str, str
 
 
 class Extracteur:
-    obj: Objets
+    obj: "Objets"
     crf: Segmenteur
 
     def __init__(
@@ -365,8 +366,13 @@ class Extracteur:
         segment_model: Union[Path, None] = None,
         no_csv=False,
         no_images=False,
-        object_model: Type[Objets] = Objets,
+        object_model: Union[Type["Objets"], None] = None,
     ):
+        from alexi.recognize import Objets
+
+        if object_model is None:
+            object_model = Objets
+
         self.outdir = outdir
         self.crf_s = Identificateur()
         self.obj = object_model()
@@ -584,6 +590,8 @@ class Extracteur:
 
 
 def main(args) -> None:
+    from alexi.recognize import Objets
+
     extracteur = Extracteur(
         args.outdir,
         metadata=args.metadata,

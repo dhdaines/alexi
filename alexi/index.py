@@ -11,9 +11,6 @@ from pathlib import Path
 from typing import Iterator, List, Tuple
 
 from bs4 import BeautifulSoup, Tag
-from lunr import get_default_builder, lunr, trimmer  # type: ignore
-from lunr.pipeline import Pipeline  # type: ignore
-from unidecode import unidecode  # type: ignore
 
 LOGGER = logging.getLogger("index")
 
@@ -39,13 +36,12 @@ def body_text(soup: BeautifulSoup):
 
 
 def unifold(token, _idx=None, _tokens=None):
+    from unidecode import unidecode  # type: ignore
+
     def wrap_unidecode(text, _metadata):
         return unidecode(text)
 
     return token.update(wrap_unidecode)
-
-
-Pipeline.register_function(unifold, "unifold")
 
 
 def collect(indir: Path) -> Iterator[Tuple[str, str, str]]:
@@ -88,6 +84,11 @@ def index(indirs: List[Path], outdir: Path) -> None:
     """
     Generer l'index a partir des fichiers HTML.
     """
+    from lunr import get_default_builder, lunr, trimmer  # type: ignore
+    from lunr.pipeline import Pipeline  # type: ignore
+
+    Pipeline.register_function(unifold, "unifold")
+
     # Metadata (use to index specific zones, etc)
     # with open(indir / "index.json", "rt") as infh:
     #     metadata = json.load(infh)
