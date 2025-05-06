@@ -4,12 +4,12 @@ import operator
 import re
 from os import PathLike
 from pathlib import Path
-from typing import Iterable, Iterator, Set, Union
+from typing import Iterable, Iterator, List, Set, Union
 
 import playa
 from playa import Page, Rect
-from playa.page import parse_rect, get_transformed_bound, get_bound
-from playa.structure import Element, ContentItem
+from playa.page import get_bound, get_transformed_bound, parse_rect
+from playa.structure import ContentItem, Element
 
 from alexi.analyse import Bloc
 from alexi.recognize import Objets
@@ -51,14 +51,14 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
         ):
             if page not in pages:
                 continue
-            boxes = []
+            boxes: List[Rect] = []
             mcids = set(x.mcid for x in items)
             for mcid, objs in itertools.groupby(page, operator.attrgetter("mcid")):
                 # NOTE: need to consume objs to update graphics state
-                objs = list(objs)
+                obj_list = list(objs)
                 if mcid is None or mcid not in mcids:
                     continue
-                boxes.extend(obj.bbox for obj in objs)
+                boxes.extend(obj.bbox for obj in obj_list)
             points = list(
                 itertools.chain.from_iterable(
                     ((x0, y0), (x1, y1)) for x0, y0, x1, y1 in boxes
