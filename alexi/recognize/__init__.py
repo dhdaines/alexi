@@ -72,6 +72,10 @@ class Objets:
             from alexi.recognize.docling import ObjetsDocling
 
             return ObjetsDocling
+        elif name == "playa":
+            from alexi.recognize.playa import ObjetsPlaya
+
+            return ObjetsPlaya
         else:
             return cls
 
