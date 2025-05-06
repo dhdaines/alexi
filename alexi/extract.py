@@ -12,7 +12,8 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, TextIO, Type, Union
 
-import pdfplumber
+import paves.image as pi
+import playa
 from natsort import natsorted
 
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
@@ -196,7 +197,9 @@ def make_index_html(
         outfh.write(HTML_FOOTER)
 
 
-def save_images_from_pdf(blocs: list[Bloc], pdf_path: Path, docdir: Path):
+def save_images_from_pdf(
+    blocs: list[Bloc], pdf_path: Path, docdir: Path, dpi: int = 150
+):
     """Convertir des éléments du PDF difficiles à réaliser en texte en
     images et les insérer dans la structure du document (liste de blocs).
     """
@@ -205,24 +208,23 @@ def save_images_from_pdf(blocs: list[Bloc], pdf_path: Path, docdir: Path):
         if bloc.type in ("Tableau", "Figure"):
             assert isinstance(bloc.page_number, int)
             images.setdefault(bloc.page_number, []).append(bloc)
-    # FIXME: Use pypdfium2 directly
-    pdf = pdfplumber.open(pdf_path)
+    pdf = playa.open(pdf_path)
+    scale = dpi / 72
     for page_number, image_blocs in images.items():
         page = pdf.pages[page_number - 1]
+        image = pi.show(page, dpi=dpi)
         for bloc in image_blocs:
             x0, top, x1, bottom = bloc.bbox
             if x0 == x1 or top == bottom:
                 LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
                 continue
-            x0 = max(0, x0)
-            top = max(0, top)
-            x1 = min(page.width, x1)
-            bottom = min(page.height, bottom)
-            img = page.crop((x0, top, x1, bottom)).to_image(
-                resolution=150, antialias=True
-            )
+            x0 = max(0, x0) * scale
+            top = max(0, top) * scale
+            x1 = min(page.width, x1) * scale
+            bottom = min(page.height, bottom) * scale
+            fig = image.crop((x0, top, x1, bottom))
             LOGGER.info("Extraction de %s", docdir / bloc.img)
-            img.save(docdir / bloc.img)
+            fig.save(docdir / bloc.img)
     pdf.close()
 
 
