@@ -62,7 +62,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "-O",
         "--object-model",
-        choices=["none", "docling", "yolo"],
+        choices=["none", "playa", "docling", "yolo"],
         default="none",
         help="Modele pour detection d'objects",
     )

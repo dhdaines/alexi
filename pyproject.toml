@@ -17,7 +17,6 @@ dependencies = [
     "httpx",
     "lxml",
     "pdfplumber",
-    "playa-pdf",
     "scikit-learn",
     "sklearn-crfsuite",
     "lunr[languages]",
@@ -41,6 +40,9 @@ yolo = [
 ]
 docling = [
     "docling-ibm-models>=3.3.1",
+]
+playa = [
+    "playa-pdf",
 ]
 api = [
     "fastapi[standard]",

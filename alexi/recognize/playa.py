@@ -44,8 +44,9 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
             _bbox=convert_bbox(el.page, bbox),
         )
     else:
-        # FIXME: Quite inefficient since we need to iterate over the
-        # page for every element
+        # FIXME: Potentially inefficient since we need to iterate over
+        # the page for every element, *but* it is considerably more
+        # complex to iterate over pages as we have to construct mappings
         for page, items in itertools.groupby(
             content_items(el), operator.attrgetter("page")
         ):
@@ -91,5 +92,5 @@ class ObjetsPlaya(Objets):
                 if pages is None
                 else set(pdf.pages[x - 1] for x in pages)
             )
-            for el in pdf.structure.find_all(re.compile(r"(?:Table|Figure)$")):
+            for el in pdf.structure.find_all(re.compile(r"^(?:Table|Figure)$")):
                 yield from make_blocs(el, pageset)
