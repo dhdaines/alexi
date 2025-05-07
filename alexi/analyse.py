@@ -11,8 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Iterator, NamedTuple, Optional, Union
 
-from pdfplumber.utils.geometry import T_bbox, calculate_area, merge_bboxes
-
+from playa import Rect
 from .types import T_obj
 
 LOGGER = logging.getLogger("analyse")
@@ -36,7 +35,7 @@ class Bloc:
     type: str
     contenu: list[T_obj]
     liens: Optional[list[Hyperlien]] = None
-    _bbox: Optional[T_bbox] = None
+    _bbox: Optional[Rect] = None
     _page_number: Optional[int] = None
 
     def __hash__(self) -> int:
@@ -58,7 +57,7 @@ class Bloc:
         return int(self.contenu[0]["page"])
 
     @property
-    def bbox(self) -> T_bbox:
+    def bbox(self) -> Rect:
         if self._bbox is not None:
             return self._bbox
         return merge_bboxes(
@@ -344,11 +343,26 @@ class Document:
         return self.structure.numero
 
 
-def bbox_overlaps(obox: T_bbox, bbox: T_bbox) -> bool:
+def bbox_overlaps(obox: Rect, bbox: Rect) -> bool:
     """Déterminer si deux BBox ont une intersection."""
     ox0, otop, ox1, obottom = obox
     x0, top, x1, bottom = bbox
     return ox0 < x1 and ox1 > x0 and otop < bottom and obottom > top
+
+
+def calculate_area(box: Rect) -> float:
+    x0, y0, x1, y1 = box
+    return abs((x1 - x0) * (y1 - y0))
+
+
+def merge_bboxes(boxes: Iterable[Rect]) -> Rect:
+    x0, y0, x1, y1 = zip(*boxes)
+    return (
+        min(min(x0), min(x1)),
+        min(min(y0), min(y1)),
+        max(max(x0), max(x1)),
+        max(max(y0), max(y1)),
+    )
 
 
 def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
