@@ -9,8 +9,8 @@ from typing import Any, Iterable, Iterator, Sequence
 import joblib  # type: ignore
 
 from alexi.analyse import group_iob
-from alexi.convert import FIELDNAMES, Converteur
-from alexi.segment import Segmenteur, T_obj, page2features, page2labels, split_pages
+from alexi.convert import FIELDNAMES, Converteur, T_obj
+from alexi.segment import Segmenteur, page2features, page2labels, split_pages
 
 FEATNAMES = [name for name in FIELDNAMES if name != "sequence"]
 DEFAULT_MODEL = Path(__file__).parent / "models" / "crfseq.joblib.gz"

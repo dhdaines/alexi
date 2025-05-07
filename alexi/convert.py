@@ -4,14 +4,13 @@ import csv
 import logging
 from collections import deque
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Optional, TextIO
+from typing import Any, Dict, Iterable, Iterator, Optional, TextIO
 
 from pdfplumber import PDF
 from pdfplumber.page import Page
 from pdfplumber.structure import PDFStructElement, PDFStructTree, StructTreeMissing
 
-from .types import T_obj
-
+T_obj = Dict[str, Any]
 LOGGER = logging.getLogger("convert")
 FIELDNAMES = [
     "sequence",

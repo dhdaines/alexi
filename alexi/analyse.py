@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, NamedTuple, Optional, Union
 
 from playa import Rect
-from .types import T_obj
+from alexi.convert import T_obj
 
 LOGGER = logging.getLogger("analyse")
 

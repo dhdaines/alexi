@@ -11,12 +11,11 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator, Union
 
 from alexi.analyse import group_iob
-from alexi.convert import Converteur, write_csv
+from alexi.convert import Converteur, write_csv, T_obj
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
 from alexi.segment import DEFAULT_MODEL_NOSTRUCT, Segmenteur
-from alexi.types import T_obj
 
 LOGGER = logging.getLogger(Path(__file__).stem)
 
