@@ -89,6 +89,7 @@ async def async_main(args: argparse.Namespace) -> None:
                 if "href" not in a.attrs:
                     continue
                 path = str(a["href"])
+                LOGGER.info("Adding link: %s", path)
                 _, suffix = os.path.splitext(path.lower())
                 if suffix in extensions or suffix[1:] in extensions:
                     paths.append(path)
@@ -100,7 +101,9 @@ async def async_main(args: argparse.Namespace) -> None:
                     assert isinstance(li, Tag)
                     aa = li.find("a")
                     assert isinstance(aa, Tag)
-                    paths.append(str(aa["href"]))
+                    path = str(aa["href"])
+                    paths.append(path)
+                    LOGGER.info("Adding link: %s", path)
     urls = {}
     for p in paths:
         excluded = False
@@ -115,8 +118,9 @@ async def async_main(args: argparse.Namespace) -> None:
             url = p
         else:
             url = f"{u.scheme}://{u.netloc}{up.path}"
-        outname = Path(up.path).name
+        outname = urllib.parse.unquote(Path(up.path).name)
         outpath = args.outdir / outname
+        LOGGER.info("Checking URL %s vs file %s", url, outpath)
         try:
             mtime = datetime.datetime.fromtimestamp(
                 outpath.stat().st_mtime, tz=datetime.timezone.utc
