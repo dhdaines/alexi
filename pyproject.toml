@@ -18,7 +18,7 @@ dependencies = [
     "lxml",
     "pdfplumber",
     "playa-pdf>=0.5",
-    "paves>=0.4.1",
+    "paves>=0.5",
     "scikit-learn",
     "sklearn-crfsuite",
     "lunr[languages]",
