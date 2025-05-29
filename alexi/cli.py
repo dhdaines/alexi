@@ -18,17 +18,17 @@ LOGGER = logging.getLogger("alexi")
 def convert_main(args: argparse.Namespace):
     """Convertir les PDF en CSV"""
     from .convert import Converteur, write_csv
-    from .convert_playa import extract_words
+    from .convert_playa import Converteur as ConverteurPlaya
 
     if args.pages:
         pages = [max(1, int(x)) for x in args.pages.split(",")]
     else:
         pages = None
     if args.playa:
-        words = extract_words(args.pdf, pages)
+        conv = ConverteurPlaya(args.pdf)
     else:
         conv = Converteur(args.pdf)
-        words = conv.extract_words(pages)
+    words = conv.extract_words(pages)
     write_csv(words, sys.stdout)
 
 

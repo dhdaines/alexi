@@ -1,17 +1,16 @@
 """Conversion de PDF en CSV"""
 
 import logging
-from copy import copy
 from pathlib import Path
 from typing import Iterator, List, Union
 
 import playa
 from playa.content import ContentObject, GlyphObject, TextObject
 from playa.pdftypes import Point, Rect
-from playa.structure import Element
+from playa.structure import Element, Tree
 from playa.utils import get_bound_rects
 
-from alexi.convert import T_obj, write_csv
+from alexi.convert import T_obj
 
 LOGGER = logging.getLogger(__name__)
 
@@ -128,25 +127,21 @@ def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]
         yield make_word(textobj, "".join(chars), get_bound_rects(boxes), pagetop)
 
 
-def extract_words(path: Path, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
-    """Extraire mots et traits d'un PDF."""
-    with playa.open(path) as pdf:
+class Converteur:
+    pdf: playa.Document
+    tree: Union[Tree, None]
+
+    def __init__(self, path: Path):
+        self.pdf = playa.open(path)
+        self.tree = self.pdf.structure
+
+    def extract_words(self, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
+        """Extraire mots et traits d'un PDF."""
         if pages is None:
-            pages = pdf.pages
+            pages = self.pdf.pages
         else:
-            pages = pdf.pages[[x - 1 for x in pages]]
+            pages = self.pdf.pages[[x - 1 for x in pages]]
         pagetop = 0
         for page in pages:
             yield from iter_words(page, pagetop)
             pagetop += page.height
-
-
-if __name__ == "__main__":
-    import argparse
-    import sys
-
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pdf", type=Path)
-    args = parser.parse_args()
-
-    write_csv(extract_words(args.pdf), sys.stdout)
