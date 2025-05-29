@@ -41,6 +41,21 @@ def write_csv(
     writer.writerows(doc)
 
 
+def get_rgb(obj: TextObject) -> str:
+    """Extraire la couleur d'un objet en chiffres hexadécimaux"""
+    ncs = obj.gstate.ncs
+    ncolor = obj.gstate.ncolor
+    if ncs.ncomponents == 1:
+        gray = ncolor.values[0]
+        return "#" + "".join(
+            ("%x" % int(min(0.999, val) * 16) for val in (gray, gray, gray))
+        )
+    else:
+        return "#" + "".join(
+            ("%x" % int(min(0.999, val) * 16) for val in ncolor.values)
+        )
+
+
 def get_tagstack(el: Element) -> str:
     """Extraire la généalogie d'éléments structurels."""
     tags = [el.role]
@@ -81,12 +96,13 @@ def line_break(glyph: GlyphObject, origin: Point) -> bool:
 
 def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
     page = obj.page
-    x0, y0, x1, y1 = bbox
+    x0, y0, x1, y1 = (int(round(x)) for x in bbox)
     word = {
         "text": text,
         "page": page.page_idx,
         "page_width": page.width,
         "page_height": page.height,
+        "rgb": get_rgb(obj),
         "x0": x0,
         "x1": x1,
         "top": y0,
