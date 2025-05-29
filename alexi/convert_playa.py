@@ -1,5 +1,6 @@
 """Conversion de PDF en CSV"""
 
+import itertools
 import logging
 from pathlib import Path
 from typing import Iterator, List, Union
@@ -68,7 +69,7 @@ def line_break(glyph: GlyphObject, origin: Point) -> bool:
     return line_offset < 0
 
 
-def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
+def make_word(obj: TextObject, text: str, bbox: Rect) -> T_obj:
     page = obj.page
     x0, y0, x1, y1 = (int(round(x)) for x in bbox)
     word = {
@@ -81,7 +82,6 @@ def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
         "x1": x1,
         "top": y0,
         "bottom": y1,
-        "doctop": y0 + pagetop,
     }
     if obj.gstate.font is not None:
         word["fontname"] = obj.gstate.font.fontname
@@ -94,7 +94,7 @@ def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
     return word
 
 
-def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]:
+def iter_words(objs: Iterator[ContentObject]) -> Iterator[T_obj]:
     chars = []
     boxes = []
     textobj: Union[TextObject, None] = None
@@ -109,9 +109,7 @@ def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]
                 and chars
                 and (word_break(glyph, next_origin) or line_break(glyph, next_origin))
             ):
-                yield make_word(
-                    textobj, "".join(chars), get_bound_rects(boxes), pagetop
-                )
+                yield make_word(textobj, "".join(chars), get_bound_rects(boxes))
                 boxes = []
                 chars = []
                 textobj = None
@@ -124,7 +122,11 @@ def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]
             dx, dy = glyph.displacement
             next_origin = (x + dx, y + dy)
     if chars and textobj is not None:
-        yield make_word(textobj, "".join(chars), get_bound_rects(boxes), pagetop)
+        yield make_word(textobj, "".join(chars), get_bound_rects(boxes))
+
+
+def extract_page(page: playa.Page) -> List[T_obj]:
+    return list(iter_words(page))
 
 
 class Converteur:
@@ -132,7 +134,7 @@ class Converteur:
     tree: Union[Tree, None]
 
     def __init__(self, path: Path):
-        self.pdf = playa.open(path)
+        self.pdf = playa.open(path, max_workers=2)
         self.tree = self.pdf.structure
 
     def extract_words(self, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
@@ -141,7 +143,4 @@ class Converteur:
             pages = self.pdf.pages
         else:
             pages = self.pdf.pages[[x - 1 for x in pages]]
-        pagetop = 0
-        for page in pages:
-            yield from iter_words(page, pagetop)
-            pagetop += page.height
+        return itertools.chain.from_iterable(pages.map(extract_page))
