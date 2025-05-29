@@ -104,7 +104,7 @@ def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
     return word
 
 
-def tagged_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]:
+def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]:
     chars = []
     boxes = []
     next_origin: Union[None, Point] = (0, 0)
@@ -133,20 +133,13 @@ def tagged_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_ob
         yield make_word(textobj, "".join(chars), get_bound_rects(boxes), pagetop)
 
 
-def untagged_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]:
-    yield from ()
-
-
 def extract_words(path: Path) -> Iterator[T_obj]:
     """Extraire mots et traits d'un PDF."""
     with playa.open(path) as pdf:
         # Iterate over text objects grouped by MCID
         pagetop = 0
         for page in pdf.pages:
-            if pdf.is_tagged:
-                yield from tagged_words(page, pagetop)
-            else:
-                yield from untagged_words(page, pagetop)
+            yield from iter_words(page, pagetop)
             pagetop += page.height
 
 
