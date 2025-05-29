@@ -402,7 +402,7 @@ class Extracteur:
         if self.pdfdata and pdf_path.name not in self.pdfdata:
             LOGGER.warning("Non-traitement de %s car absent des metadonnées", path)
             return None
-        conv = None
+        conv: Union[Converteur, ConverteurPlaya, None] = None
         if path.suffix == ".csv":
             LOGGER.info("Lecture de %s", path)
             iob = list(read_csv(path))

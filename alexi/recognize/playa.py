@@ -4,10 +4,11 @@ import operator
 import re
 from os import PathLike
 from pathlib import Path
-from typing import Iterable, Iterator, Set, Union
+from typing import Iterable, Iterator, Set, Union, cast
 
 import playa
 from playa import Page
+from playa.pdftypes import Rect
 from playa.structure import ContentItem, Element
 from playa.utils import get_bound_rects
 
@@ -32,7 +33,7 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
     if el.page is not None and el.page not in pages:
         return
     if el.page is not None:
-        bbox = tuple(int(round(x)) for x in el.bbox)
+        bbox = cast(Rect, tuple(int(round(x)) for x in el.bbox))
         LOGGER.info("Got BBox on page %d from element: %r", el.page.page_idx + 1, bbox)
         yield Bloc(
             type="Tableau" if el.type == "Table" else el.type,
@@ -49,8 +50,11 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
         ):
             if page not in pages:
                 continue
-            bbox = tuple(
-                int(round(x)) for x in get_bound_rects(item.bbox for item in items)
+            bbox = cast(
+                Rect,
+                tuple(
+                    int(round(x)) for x in get_bound_rects(item.bbox for item in items)
+                ),
             )
             LOGGER.info(
                 "Got BBox on page %d from contents: %r", page.page_idx + 1, bbox

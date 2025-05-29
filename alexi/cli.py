@@ -11,6 +11,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import Union
 
 LOGGER = logging.getLogger("alexi")
 
@@ -25,7 +26,7 @@ def convert_main(args: argparse.Namespace):
     else:
         pages = None
     if args.playa:
-        conv = ConverteurPlaya(args.pdf)
+        conv: Union[Converteur, ConverteurPlaya] = ConverteurPlaya(args.pdf)
     else:
         conv = Converteur(args.pdf)
     words = conv.extract_words(pages)

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterator, List, Union
 
 import playa
-from playa.content import ContentObject, GlyphObject, TextObject
+from playa.content import GlyphObject, TextObject
 from playa.pdftypes import Point, Rect
 from playa.structure import Element, Tree
 from playa.utils import get_bound_rects
@@ -94,9 +94,9 @@ def make_word(obj: TextObject, text: str, bbox: Rect) -> T_obj:
     return word
 
 
-def iter_words(objs: Iterator[ContentObject]) -> Iterator[T_obj]:
-    chars = []
-    boxes = []
+def iter_words(objs: playa.Page) -> Iterator[T_obj]:
+    chars: List[str] = []
+    boxes: List[Rect] = []
     textobj: Union[TextObject, None] = None
     next_origin: Union[None, Point] = (0, 0)
     for obj in objs:
@@ -113,7 +113,7 @@ def iter_words(objs: Iterator[ContentObject]) -> Iterator[T_obj]:
                 boxes = []
                 chars = []
                 textobj = None
-            if glyph.text != " ":
+            if glyph.text is not None and glyph.text != " ":
                 chars.append(glyph.text)
                 boxes.append(glyph.bbox)
                 if textobj is None:
@@ -140,7 +140,7 @@ class Converteur:
     def extract_words(self, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
         """Extraire mots et traits d'un PDF."""
         if pages is None:
-            pages = self.pdf.pages
+            pdfpages = self.pdf.pages
         else:
-            pages = self.pdf.pages[[x - 1 for x in pages]]
-        return itertools.chain.from_iterable(pages.map(extract_page))
+            pdfpages = self.pdf.pages[[x - 1 for x in pages]]
+        return itertools.chain.from_iterable(pdfpages.map(extract_page))
