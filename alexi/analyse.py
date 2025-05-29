@@ -376,8 +376,14 @@ def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
         new_ordered_images = []
         overlapping = {}
         for idx, image in ordered_images:
+            # Must always merge with an image bloc (FIXME: configurable?)
+            if image.type not in ("Tableau", "Figure"):
+                continue
             for ydx, other in ordered_images:
                 if other is image:
+                    continue
+                # Do not merge non-displaying blocs (FIXME: configurable?)
+                if other.type in ("Tete", "Pied", "TOC"):
                     continue
                 if bbox_overlaps(image.bbox, other.bbox):
                     overlapping[ydx] = other
@@ -386,10 +392,10 @@ def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
                     (image.bbox, *(other.bbox for other in overlapping.values()))
                 )
                 LOGGER.info(
-                    "image %s overlaps %s merged to %s"
+                    "%s @ %r overlaps %s merged to %s"
                     % (
-                        image.bbox,
-                        [other.bbox for other in overlapping.values()],
+                        image.type, image.bbox,
+                        ", ".join(("%s @ %r" % (other.type, other.bbox)) for other in overlapping.values()),
                         big_box,
                     )
                 )
@@ -461,6 +467,9 @@ class Analyseur:
                 page_blocs.extend(images_bypage[page_number])
                 page_blocs.sort(key=bbox_order)
                 if merge:
+                    LOGGER.info("Merging blocs on page %d:", page_number)
+                    for bloc in page_blocs:
+                        LOGGER.info("\t%s @ %r", bloc.type, bloc.bbox)
                     new_blocs.extend(merge_overlaps(page_blocs))
                 else:
                     new_blocs.extend(page_blocs)
