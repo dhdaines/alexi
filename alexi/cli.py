@@ -18,13 +18,18 @@ LOGGER = logging.getLogger("alexi")
 def convert_main(args: argparse.Namespace):
     """Convertir les PDF en CSV"""
     from .convert import Converteur, write_csv
+    from .convert_playa import extract_words
 
     if args.pages:
         pages = [max(1, int(x)) for x in args.pages.split(",")]
     else:
         pages = None
-    conv = Converteur(args.pdf)
-    write_csv(conv.extract_words(pages), sys.stdout)
+    if args.playa:
+        words = extract_words(args.pdf, pages)
+    else:
+        conv = Converteur(args.pdf)
+        words = conv.extract_words(pages)
+    write_csv(words, sys.stdout)
 
 
 def segment_main(args: argparse.Namespace):
@@ -102,11 +107,14 @@ def make_argparse() -> argparse.ArgumentParser:
         "convert", help="Convertir le texte et les objets des fichiers PDF en CSV"
     )
     convert.add_argument(
-        "pdf", help="Fichier PDF à traiter", type=argparse.FileType("rb")
+        "pdf",
+        help="Fichier PDF à traiter",
+        type=Path,
     )
     convert.add_argument(
         "--pages", help="Liste de numéros de page à extraire, séparés par virgule"
     )
+    convert.add_argument("--playa", help="Utiliser PLAYA", action="store_true")
     convert.set_defaults(func=convert_main)
 
     segment = subp.add_parser(

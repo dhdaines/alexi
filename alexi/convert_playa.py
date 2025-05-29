@@ -1,44 +1,19 @@
 """Conversion de PDF en CSV"""
 
-import csv
 import logging
+from copy import copy
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, TextIO, Union
+from typing import Iterator, List, Union
 
 import playa
 from playa.content import ContentObject, GlyphObject, TextObject
-from playa.structure import Element
 from playa.pdftypes import Point, Rect
+from playa.structure import Element
 from playa.utils import get_bound_rects
 
-T_obj = Dict[str, Any]
-LOGGER = logging.getLogger("convert")
-FIELDNAMES = [
-    "sequence",
-    "segment",
-    "text",
-    "page",
-    "page_width",
-    "page_height",
-    "fontname",
-    "rgb",
-    "x0",
-    "x1",
-    "top",
-    "bottom",
-    "doctop",
-    "mcid",
-    "mctag",
-    "tagstack",
-]
+from alexi.convert import T_obj, write_csv
 
-
-def write_csv(
-    doc: Iterable[dict[str, Any]], outfh: TextIO, fieldnames: list[str] = FIELDNAMES
-):
-    writer = csv.DictWriter(outfh, fieldnames, extrasaction="ignore")
-    writer.writeheader()
-    writer.writerows(doc)
+LOGGER = logging.getLogger(__name__)
 
 
 def get_rgb(obj: TextObject) -> str:
@@ -99,7 +74,7 @@ def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
     x0, y0, x1, y1 = (int(round(x)) for x in bbox)
     word = {
         "text": text,
-        "page": page.page_idx,
+        "page": page.page_idx + 1,
         "page_width": page.width,
         "page_height": page.height,
         "rgb": get_rgb(obj),
@@ -123,14 +98,15 @@ def make_word(obj: TextObject, text: str, bbox: Rect, pagetop: float) -> T_obj:
 def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]:
     chars = []
     boxes = []
+    textobj: Union[TextObject, None] = None
     next_origin: Union[None, Point] = (0, 0)
     for obj in objs:
         if not isinstance(obj, TextObject):
             continue
-        textobj = obj
         for glyph in obj:
             if (
                 next_origin is not None
+                and textobj is not None
                 and chars
                 and (word_break(glyph, next_origin) or line_break(glyph, next_origin))
             ):
@@ -139,22 +115,28 @@ def iter_words(objs: Iterator[ContentObject], pagetop: float) -> Iterator[T_obj]
                 )
                 boxes = []
                 chars = []
+                textobj = None
             if glyph.text != " ":
                 chars.append(glyph.text)
                 boxes.append(glyph.bbox)
+                if textobj is None:
+                    textobj = obj
             x, y = glyph.origin
             dx, dy = glyph.displacement
             next_origin = (x + dx, y + dy)
-    if chars and textobj:
+    if chars and textobj is not None:
         yield make_word(textobj, "".join(chars), get_bound_rects(boxes), pagetop)
 
 
-def extract_words(path: Path) -> Iterator[T_obj]:
+def extract_words(path: Path, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
     """Extraire mots et traits d'un PDF."""
     with playa.open(path) as pdf:
-        # Iterate over text objects grouped by MCID
+        if pages is None:
+            pages = pdf.pages
+        else:
+            pages = pdf.pages[[x - 1 for x in pages]]
         pagetop = 0
-        for page in pdf.pages:
+        for page in pages:
             yield from iter_words(page, pagetop)
             pagetop += page.height
 
