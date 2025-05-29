@@ -394,8 +394,12 @@ def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
                 LOGGER.info(
                     "%s @ %r overlaps %s merged to %s"
                     % (
-                        image.type, image.bbox,
-                        ", ".join(("%s @ %r" % (other.type, other.bbox)) for other in overlapping.values()),
+                        image.type,
+                        image.bbox,
+                        ", ".join(
+                            ("%s @ %r" % (other.type, other.bbox))
+                            for other in overlapping.values()
+                        ),
                         big_box,
                     )
                 )
