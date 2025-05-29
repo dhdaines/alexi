@@ -31,12 +31,14 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
     dans l'ensemble de pages recherchées"""
     if el.page is not None and el.page not in pages:
         return
-    if el.page is not None and "BBox" in el.props:
+    if el.page is not None:
+        bbox = tuple(int(round(x)) for x in el.bbox)
+        LOGGER.info("Got BBox on page %d from element: %r", el.page.page_idx + 1, bbox)
         yield Bloc(
             type="Tableau" if el.type == "Table" else el.type,
             contenu=[],
             _page_number=el.page.page_idx + 1,
-            _bbox=el.bbox,
+            _bbox=bbox,
         )
     else:
         # FIXME: Potentially inefficient since we need to iterate over
@@ -47,11 +49,17 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
         ):
             if page not in pages:
                 continue
+            bbox = tuple(
+                int(round(x)) for x in get_bound_rects(item.bbox for item in items)
+            )
+            LOGGER.info(
+                "Got BBox on page %d from contents: %r", page.page_idx + 1, bbox
+            )
             yield Bloc(
                 type="Tableau" if el.type == "Table" else el.type,
                 contenu=[],
                 _page_number=page.page_idx + 1,
-                _bbox=get_bound_rects(item.bbox for item in items),
+                _bbox=bbox,
             )
 
 
@@ -74,4 +82,9 @@ class ObjetsPlaya(Objets):
                 else set(pdf.pages[x - 1] for x in pages)
             )
             for el in pdf.structure.find_all(re.compile(r"^(?:Table|Figure)$")):
+                LOGGER.info(
+                    "make_blocs from %s on page %r",
+                    el.type,
+                    el.page.page_idx + 1 if el.page else None,
+                )
                 yield from make_blocs(el, pageset)
