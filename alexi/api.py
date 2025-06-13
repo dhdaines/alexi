@@ -72,20 +72,17 @@ async def recherche(
 app = FastAPI()
 app.mount("/api", API)
 app.mount("/", StaticFiles(directory=DOCDIR), name="alexi")
-middleware_args: dict[str, str | list[str]]
 if os.getenv("DEVELOPMENT", False) or "dev" in sys.argv:
     LOGGER.info(
         "Running in development mode, will allow requests from http://localhost:*"
     )
     # Allow requests from localhost dev servers
-    middleware_args = dict(
-        allow_origin_regex="http://localhost(:.*)?",
-    )
+    app = CORSMiddleware(app=app, allow_origin_regex="http://localhost(:.*)?")
 else:
     # Allow requests *only* from ZONALDA app (or otherwise configured site name)
-    middleware_args = dict(
+    app = CORSMiddleware(
+        app=app,
         allow_origins=[
             os.getenv("ORIGIN", "https://dhdaines.github.io"),
         ],
     )
-app.add_middleware(CORSMiddleware, allow_methods=["GET", "OPTIONS"], **middleware_args)
