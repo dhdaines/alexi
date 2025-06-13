@@ -71,12 +71,12 @@ def line_break(glyph: GlyphObject, origin: Point) -> bool:
 
 def make_word(obj: TextObject, text: str, bbox: Rect) -> T_obj:
     page = obj.page
-    x0, y0, x1, y1 = (int(round(x)) for x in bbox)
+    x0, y0, x1, y1 = (round(x) for x in bbox)
     word = {
         "text": text,
         "page": page.page_idx + 1,
-        "page_width": page.width,
-        "page_height": page.height,
+        "page_width": round(page.width),
+        "page_height": round(page.height),
         "rgb": get_rgb(obj),
         "x0": x0,
         "x1": x1,

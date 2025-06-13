@@ -25,7 +25,6 @@ FIELDNAMES = [
     "x1",
     "top",
     "bottom",
-    "doctop",
     "mcid",
     "mctag",
     "tagstack",

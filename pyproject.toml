@@ -17,7 +17,7 @@ dependencies = [
     "httpx",
     "lxml",
     "pdfplumber",
-    "playa-pdf>=0.5",
+    "playa-pdf>=0.6",
     "paves>=0.5",
     "scikit-learn",
     "sklearn-crfsuite",
