@@ -17,14 +17,14 @@ import playa
 from natsort import natsorted
 
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
-from alexi.convert import Converteur
+from alexi.convert import Converteur, T_obj
+from alexi.convert_playa import Converteur as ConverteurPlaya
 from alexi.format import HtmlFormatter
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.link import Resolver
 from alexi.segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
 from alexi.segment import DEFAULT_MODEL_NOSTRUCT, Segmenteur
-from alexi.types import T_obj
 
 if TYPE_CHECKING:
     from alexi.recognize import Objets
@@ -402,7 +402,7 @@ class Extracteur:
         if self.pdfdata and pdf_path.name not in self.pdfdata:
             LOGGER.warning("Non-traitement de %s car absent des metadonnées", path)
             return None
-        conv = None
+        conv: Union[Converteur, ConverteurPlaya, None] = None
         if path.suffix == ".csv":
             LOGGER.info("Lecture de %s", path)
             iob = list(read_csv(path))
@@ -412,9 +412,15 @@ class Extracteur:
                 LOGGER.info("Lecture de %s", csvpath)
                 iob = list(read_csv(csvpath))
             else:
+                from alexi.recognize.playa import ObjetsPlaya
+
                 LOGGER.info("Conversion, segmentation et classification de %s", path)
-                conv = Converteur(path)
-                feats = conv.extract_words()
+                if isinstance(self.obj, ObjetsPlaya):
+                    conv = ConverteurPlaya(path)
+                    feats = conv.extract_words()
+                else:
+                    conv = Converteur(path)
+                    feats = conv.extract_words()
                 crf = self.crf
                 if conv.tree is None:
                     LOGGER.warning("Structure logique absente: %s", path)

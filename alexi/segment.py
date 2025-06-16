@@ -11,9 +11,8 @@ from typing import Any, Callable, Iterable, Iterator, Sequence, Union
 
 import joblib  # type: ignore
 
-from alexi.convert import FIELDNAMES
+from alexi.convert import FIELDNAMES, T_obj
 from alexi.format import line_breaks
-from alexi.types import T_obj
 
 FEATNAMES = [name for name in FIELDNAMES if name not in ("segment", "sequence")]
 DEFAULT_MODEL = Path(__file__).parent / "models" / "crf.joblib.gz"

@@ -11,9 +11,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Iterator, NamedTuple, Optional, Union
 
-from pdfplumber.utils.geometry import T_bbox, calculate_area, merge_bboxes
+from playa import Rect
 
-from .types import T_obj
+from alexi.convert import T_obj
 
 LOGGER = logging.getLogger("analyse")
 
@@ -36,7 +36,7 @@ class Bloc:
     type: str
     contenu: list[T_obj]
     liens: Optional[list[Hyperlien]] = None
-    _bbox: Optional[T_bbox] = None
+    _bbox: Optional[Rect] = None
     _page_number: Optional[int] = None
 
     def __hash__(self) -> int:
@@ -58,7 +58,7 @@ class Bloc:
         return int(self.contenu[0]["page"])
 
     @property
-    def bbox(self) -> T_bbox:
+    def bbox(self) -> Rect:
         if self._bbox is not None:
             return self._bbox
         return merge_bboxes(
@@ -344,11 +344,26 @@ class Document:
         return self.structure.numero
 
 
-def bbox_overlaps(obox: T_bbox, bbox: T_bbox) -> bool:
+def bbox_overlaps(obox: Rect, bbox: Rect) -> bool:
     """Déterminer si deux BBox ont une intersection."""
     ox0, otop, ox1, obottom = obox
     x0, top, x1, bottom = bbox
     return ox0 < x1 and ox1 > x0 and otop < bottom and obottom > top
+
+
+def calculate_area(box: Rect) -> float:
+    x0, y0, x1, y1 = box
+    return abs((x1 - x0) * (y1 - y0))
+
+
+def merge_bboxes(boxes: Iterable[Rect]) -> Rect:
+    x0, y0, x1, y1 = zip(*boxes)
+    return (
+        min(min(x0), min(x1)),
+        min(min(y0), min(y1)),
+        max(max(x0), max(x1)),
+        max(max(y0), max(y1)),
+    )
 
 
 def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
@@ -361,8 +376,14 @@ def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
         new_ordered_images = []
         overlapping = {}
         for idx, image in ordered_images:
+            # Must always merge with an image bloc (FIXME: configurable?)
+            if image.type not in ("Tableau", "Figure"):
+                continue
             for ydx, other in ordered_images:
                 if other is image:
+                    continue
+                # Do not merge non-displaying blocs (FIXME: configurable?)
+                if other.type in ("Tete", "Pied", "TOC"):
                     continue
                 if bbox_overlaps(image.bbox, other.bbox):
                     overlapping[ydx] = other
@@ -371,10 +392,14 @@ def merge_overlaps(images: Iterable[Bloc]) -> list[Bloc]:
                     (image.bbox, *(other.bbox for other in overlapping.values()))
                 )
                 LOGGER.info(
-                    "image %s overlaps %s merged to %s"
+                    "%s @ %r overlaps %s merged to %s"
                     % (
+                        image.type,
                         image.bbox,
-                        [other.bbox for other in overlapping.values()],
+                        ", ".join(
+                            ("%s @ %r" % (other.type, other.bbox))
+                            for other in overlapping.values()
+                        ),
                         big_box,
                     )
                 )
@@ -446,6 +471,9 @@ class Analyseur:
                 page_blocs.extend(images_bypage[page_number])
                 page_blocs.sort(key=bbox_order)
                 if merge:
+                    LOGGER.info("Merging blocs on page %d:", page_number)
+                    for bloc in page_blocs:
+                        LOGGER.info("\t%s @ %r", bloc.type, bloc.bbox)
                     new_blocs.extend(merge_overlaps(page_blocs))
                 else:
                     new_blocs.extend(page_blocs)
