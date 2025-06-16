@@ -77,11 +77,11 @@ if os.getenv("DEVELOPMENT", False) or "dev" in sys.argv:
         "Running in development mode, will allow requests from http://localhost:*"
     )
     # Allow requests from localhost dev servers
-    app = CORSMiddleware(app=app, allow_origin_regex="http://localhost(:.*)?")
+    app.add_middleware(CORSMiddleware, allow_origin_regex="http://localhost(:.*)?")
 else:
     # Allow requests *only* from ZONALDA app (or otherwise configured site name)
-    app = CORSMiddleware(
-        app=app,
+    app.add_middleware(
+        CORSMiddleware,
         allow_origins=[
             os.getenv("ORIGIN", "https://dhdaines.github.io"),
         ],
