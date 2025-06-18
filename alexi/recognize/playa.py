@@ -74,7 +74,7 @@ class ObjetsPlaya(Objets):
         """Extraire les rectangles correspondant aux objets qui seront
         représentés par des images."""
         pdf_path = Path(pdf_path)
-        with playa.open(pdf_path) as pdf:
+        with playa.open(pdf_path, max_workers=2) as pdf:
             if pdf.structure is None:
                 return
             pages = pdf.pages if pages is None else (pdf.pages[x - 1] for x in pages)
