@@ -2,7 +2,7 @@ import itertools
 import logging
 import operator
 import re
-from os import PathLike
+from os import PathLike, cpu_count
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, Union, cast
 
@@ -74,7 +74,7 @@ class ObjetsPlaya(Objets):
         """Extraire les rectangles correspondant aux objets qui seront
         représentés par des images."""
         pdf_path = Path(pdf_path)
-        with playa.open(pdf_path, max_workers=2) as pdf:
+        with playa.open(pdf_path, max_workers=cpu_count()) as pdf:
             if pdf.structure is None:
                 return
             pages = pdf.pages if pages is None else (pdf.pages[x - 1] for x in pages)
