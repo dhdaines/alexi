@@ -33,7 +33,10 @@ def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
     if el.page is not None and el.page not in pages:
         return
     if el.page is not None:
-        bbox = cast(Rect, tuple(int(round(x)) for x in el.bbox))
+        try:
+            bbox = cast(Rect, tuple(int(round(x)) for x in el.bbox))
+        except ValueError:
+            return
         LOGGER.info("Got BBox on page %d from element: %r", el.page.page_idx + 1, bbox)
         yield Bloc(
             type="Tableau" if el.type == "Table" else el.type,
