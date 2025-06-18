@@ -90,8 +90,8 @@ def json_main(args: argparse.Namespace):
 def make_argparse() -> argparse.ArgumentParser:
     """Make the argparse"""
     from . import annotate, download, extract, index, search
-    from .label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
-    from .segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
+    from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
+    from alexi.segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
