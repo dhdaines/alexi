@@ -4,7 +4,7 @@ import operator
 import re
 from os import PathLike
 from pathlib import Path
-from typing import Iterable, Iterator, Set, Union, cast
+from typing import Dict, Iterable, Iterator, Union, cast
 
 import playa
 from playa import Page
@@ -27,47 +27,41 @@ def content_items(el: Element) -> Iterator[ContentItem]:
             yield kid
 
 
-def make_blocs(el: Element, pages: Set[Page]) -> Iterator[Bloc]:
+def make_blocs(el: Element, pages: Dict[Page, Dict[int, Rect]]) -> Iterator[Bloc]:
     """Générer les blocs correspondant à un élément s'ils se trouvent
     dans l'ensemble de pages recherchées"""
     if el.page is not None and el.page not in pages:
         return
-    if el.page is not None:
-        try:
-            bbox = cast(Rect, tuple(int(round(x)) for x in el.bbox))
-        except ValueError:
-            return
-        LOGGER.info("Got BBox on page %d from element: %r", el.page.page_idx + 1, bbox)
+    LOGGER.info("%s on pages:", el.type)
+    for page, items in itertools.groupby(
+        content_items(el), operator.attrgetter("page")
+    ):
+        if page not in pages:
+            continue
+        # FIXME: Possible Form XObjects (in the hell)
+        mcids = set(item.mcid for item in items)
+        LOGGER.info("    page %d mcids %r", page.page_idx + 1, mcids)
+        boxes = pages[page]
+        bbox = cast(
+            Rect,
+            tuple(
+                int(round(x)) for x in get_bound_rects(boxes[mcid] for mcid in mcids)
+            ),
+        )
+        LOGGER.info("Got BBox on page %d from contents: %r", page.page_idx + 1, bbox)
         yield Bloc(
             type="Tableau" if el.type == "Table" else el.type,
             contenu=[],
-            _page_number=el.page.page_idx + 1,
+            _page_number=page.page_idx + 1,
             _bbox=bbox,
         )
-    else:
-        # FIXME: Potentially inefficient since we need to iterate over
-        # the page for every element, *but* it is considerably more
-        # complex to iterate over pages as we have to construct mappings
-        for page, items in itertools.groupby(
-            content_items(el), operator.attrgetter("page")
-        ):
-            if page not in pages:
-                continue
-            bbox = cast(
-                Rect,
-                tuple(
-                    int(round(x)) for x in get_bound_rects(item.bbox for item in items)
-                ),
-            )
-            LOGGER.info(
-                "Got BBox on page %d from contents: %r", page.page_idx + 1, bbox
-            )
-            yield Bloc(
-                type="Tableau" if el.type == "Table" else el.type,
-                contenu=[],
-                _page_number=page.page_idx + 1,
-                _bbox=bbox,
-            )
+
+
+def get_mcid_boxes(page: Page) -> Dict[int, Rect]:
+    boxes = {}
+    for mcid, objs in itertools.groupby(page, operator.attrgetter("mcid")):
+        boxes[mcid] = get_bound_rects(obj.bbox for obj in objs)
+    return boxes
 
 
 class ObjetsPlaya(Objets):
@@ -83,15 +77,11 @@ class ObjetsPlaya(Objets):
         with playa.open(pdf_path) as pdf:
             if pdf.structure is None:
                 return
-            pageset = (
-                set(pdf.pages)
-                if pages is None
-                else set(pdf.pages[x - 1] for x in pages)
-            )
-            for el in pdf.structure.find_all(re.compile(r"^(?:Table|Figure)$")):
-                LOGGER.info(
-                    "make_blocs from %s on page %r",
-                    el.type,
-                    el.page.page_idx + 1 if el.page else None,
-                )
-                yield from make_blocs(el, pageset)
+            pages = pdf.pages if pages is None else (pdf.pages[x - 1] for x in pages)
+            LOGGER.info("Calcul des rectangles de contenu sur pages")
+            page_boxes = {
+                page: boxes for page, boxes in zip(pages, pages.map(get_mcid_boxes))
+            }
+            LOGGER.info("Extraction des éléments visuels:")
+            for el in pdf.structure.find_all(re.compile("^(?:Table|Figure)$")):
+                yield from make_blocs(el, page_boxes)
