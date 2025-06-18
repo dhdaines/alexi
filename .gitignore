@@ -10,4 +10,4 @@ download/
 export/
 notebooks/
 .coverage
-data/*.export/
+data/**/*.export/
