@@ -1342,7 +1342,7 @@ O,I,MRC,4,612,1008,ArialMT,#000,312,337,198,210,15,P,Document;Table;TBody;TR;TH;
 O,I,19,4,612,1008,ArialMT,#000,439,451,198,210,16,P,Document;Table;TBody;TR;TD;P
 O,I,avril,4,612,1008,ArialMT,#000,455,475,198,210,16,P,Document;Table;TBody;TR;TD;P
 O,I,2022,4,612,1008,ArialMT,#000,478,502,198,210,16,P,Document;Table;TBody;TR;TD;P
-O,I,Entrée,4,612,1008,ArialMT,#000,210,242,213,225,17,P,Document;Table;TBody;TR;TH;P
+O,B-Alinea,Entrée,4,612,1008,ArialMT,#000,210,242,213,225,17,P,Document;Table;TBody;TR;TH;P
 O,I,en,4,612,1008,ArialMT,#000,245,258,213,225,17,P,Document;Table;TBody;TR;TH;P
 O,I,vigueur,4,612,1008,ArialMT,#000,261,297,213,225,17,P,Document;Table;TBody;TR;TH;P
 O,I,19,4,612,1008,ArialMT,#000,439,451,213,225,18,P,Document;Table;TBody;TR;TD;P
@@ -1428,12 +1428,12 @@ O,I,Senécal,4,612,1008,ArialMT,#000,359,399,583,596,36,P,Document;H1
 O,O,Maires,4,612,1008,ArialMT,#000,-72,-39,596,608,37,P,Document;P
 O,B-Alinea,Mairesse,4,612,1008,ArialMT,#000,133,177,596,608,37,P,Document;P
 O,I,Greffière,4,612,1008,ArialMT,#000,302,345,596,608,37,P,Document;P
-O,I,et,4,612,1008,ArialMT,#000,348,358,596,608,37,P,Document;P
+O,B-Alinea,et,4,612,1008,ArialMT,#000,348,358,596,608,37,P,Document;P
 O,I,directrice,4,612,1008,ArialMT,#000,361,405,596,608,37,P,Document;P
 O,I,des,4,612,1008,ArialMT,#000,408,426,596,608,37,P,Document;P
 O,I,services,4,612,1008,ArialMT,#000,429,469,596,608,37,P,Document;P
 O,I,juridiques,4,612,1008,ArialMT,#000,472,519,596,608,37,P,Document;P
-O,B-Alinea,Par,4,612,1008,ArialMT,#000,210,227,510,522,40,P,Document;Table;THead;TR;TH;P
+O,I,Par,4,612,1008,ArialMT,#000,210,227,510,522,40,P,Document;Table;THead;TR;TH;P
 O,I,le,4,612,1008,ArialMT,#000,230,239,510,522,40,P,Document;Table;THead;TR;TH;P
 O,I,conseil,4,612,1008,ArialMT,#000,242,276,510,522,40,P,Document;Table;THead;TR;TH;P
 O,I,21,4,612,1008,ArialMT,#000,412,424,509,522,41,P,Document;Table;THead;TR;TH;P
