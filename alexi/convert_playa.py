@@ -137,7 +137,7 @@ class Converteur:
     tree: Union[Tree, None]
 
     def __init__(self, path: Path):
-        self.pdf = playa.open(path, max_workers=cpu_count())
+        self.pdf = playa.open(path, max_workers=round(cpu_count() / 2))
         self.tree = self.pdf.structure
 
     def extract_words(self, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
