@@ -79,10 +79,11 @@ class ObjetsPlaya(Objets):
         with playa.open(pdf_path, max_workers=cpu_count()) as pdf:
             if pdf.structure is None:
                 return
-            pages = pdf.pages if pages is None else (pdf.pages[x - 1] for x in pages)
+            pagelist = pdf.pages if pages is None else pdf.pages[(x - 1 for x in pages)]
             LOGGER.info("Calcul des rectangles de contenu sur pages")
             page_boxes = {
-                page: boxes for page, boxes in zip(pages, pages.map(get_mcid_boxes))
+                page: boxes
+                for page, boxes in zip(pagelist, pagelist.map(get_mcid_boxes))
             }
             LOGGER.info("Extraction des éléments visuels:")
             for el in pdf.structure.find_all(re.compile("^(?:Table|Figure)$")):

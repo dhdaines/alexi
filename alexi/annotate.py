@@ -163,7 +163,7 @@ def main(args: argparse.Namespace) -> None:
             args.csv = maybe_csv
     if args.csv is not None:
         with open(args.csv, "rt", encoding="utf-8-sig") as infh:
-            iob = list(csv.DictReader(infh))
+            iob_list = list(csv.DictReader(infh))
     else:
         args.csv = maybe_csv
         if args.segment_model is not None:
@@ -186,10 +186,10 @@ def main(args: argparse.Namespace) -> None:
         iob = crf_s(segs)
         if args.spread:
             iob = spread_i(iob)
-        iob = list(iob)
+        iob_list = list(iob)
         with open(args.csv, "wt") as outfh:
-            write_csv(iob, outfh)
-    annotate_pdf(args.doc, pages, iob, args.out.with_suffix(".pdf"))
+            write_csv(iob_list, outfh)
+    annotate_pdf(args.doc, pages, iob_list, args.out.with_suffix(".pdf"))
 
 
 if __name__ == "__main__":
