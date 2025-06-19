@@ -212,19 +212,28 @@ def save_images_from_pdf(
     scale = dpi / 72
     for page_number, image_blocs in images.items():
         page = pdf.pages[page_number - 1]
-        image = pi.show(page, dpi=dpi)
+        boxes = []
         for bloc in image_blocs:
             x0, top, x1, bottom = bloc.bbox
             if x0 == x1 or top == bottom:
                 LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
                 continue
+            img_path = docdir / bloc.img
+            if img_path.exists():
+                LOGGER.info("Skipping existing image file %s", img_path)
+                continue
             x0 = max(0, x0) * scale
             top = max(0, top) * scale
             x1 = min(page.width, x1) * scale
             bottom = min(page.height, bottom) * scale
-            fig = image.crop((x0, top, x1, bottom))
-            LOGGER.info("Extraction de %s", docdir / bloc.img)
-            fig.save(docdir / bloc.img)
+            boxes.append((img_path, (x0, top, x1, bottom)))
+        if len(boxes) == 0:
+            continue
+        image = pi.show(page, dpi=dpi)
+        for img_path, box in boxes:
+            LOGGER.info("Extraction de %s", img_path)
+            fig = image.crop(box)
+            fig.save(img_path)
     pdf.close()
 
 

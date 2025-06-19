@@ -21,7 +21,7 @@ def scale_to_model(page: PdfPage, modeldim: float):
 
 
 def load_model_from_hub() -> Path:
-    from huggingface_hub import hf_hub_download
+    from huggingface_hub import hf_hub_download  # type: ignore[import-untyped]
 
     hf_hub_download(
         "ds4sd/docling-models", "model_artifacts/layout/preprocessor_config.json"

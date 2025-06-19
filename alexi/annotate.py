@@ -12,6 +12,7 @@ from typing import Any, Iterable, Iterator, Union
 
 from alexi.analyse import group_iob
 from alexi.convert import Converteur, T_obj, write_csv
+from alexi.convert_playa import Converteur as ConverteurPlaya
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
@@ -34,11 +35,16 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         "--pages", help="Liste de numéros de page à extraire, séparés par virgule"
     )
     parser.add_argument(
-        "--csv", help="Fichier CSV corriger pour mettre à jour la visualisation"
+        "--csv", help="Fichier CSV corrigé pour mettre à jour la visualisation"
+    )
+    parser.add_argument(
+        "--pages-from", help="Fichier CSV donnant les pages a prendre du PDF"
     )
     parser.add_argument(
         "--force", action="store_true", help="Réécrire le fichier CSV même si existant"
     )
+    parser.add_argument("--playa", help="Utiliser PLAYA", action="store_true")
+    parser.add_argument("--spread", help="Marquer segments sur I", action="store_true")
     parser.add_argument("doc", help="Document en PDF", type=Path)
     parser.add_argument("out", help="Nom de base des fichiers de sortie", type=Path)
     return parser
@@ -138,6 +144,12 @@ def main(args: argparse.Namespace) -> None:
     """Ajouter des anotations à un PDF selon l'extraction ALEXI"""
     if args.pages is not None:
         pages = sorted(int(x.strip()) for x in args.pages.split(","))
+    elif args.pages_from is not None:
+        pp = set()
+        with open(args.pages_from, "r") as infh:
+            for row in csv.DictReader(infh):
+                pp.add(int(row["page"]))
+        pages = sorted(pp)
     else:
         pages = None
     maybe_csv = args.out.with_suffix(".csv")
@@ -146,12 +158,12 @@ def main(args: argparse.Namespace) -> None:
             LOGGER.warning(
                 "Utilisation du fichier CSV déjà existant: %s "
                 "(pour réecrire ajouter --force)",
-                args.csv,
+                maybe_csv,
             )
             args.csv = maybe_csv
     if args.csv is not None:
         with open(args.csv, "rt", encoding="utf-8-sig") as infh:
-            iob = list(csv.DictReader(infh))
+            iob_list = list(csv.DictReader(infh))
     else:
         args.csv = maybe_csv
         if args.segment_model is not None:
@@ -161,17 +173,23 @@ def main(args: argparse.Namespace) -> None:
             crf = Segmenteur(DEFAULT_SEGMENT_MODEL)
             crf_n = Segmenteur(DEFAULT_MODEL_NOSTRUCT)
         crf_s = Identificateur(args.label_model)
-        conv = Converteur(args.doc)
+        if args.playa:
+            conv: Union[Converteur, ConverteurPlaya] = ConverteurPlaya(args.doc)
+        else:
+            conv = Converteur(args.doc)
         feats = conv.extract_words(pages)
         if conv.tree is None:
             LOGGER.warning("Structure logique absente: %s", args.doc)
             segs = crf_n(feats)
         else:
             segs = crf(feats)
-        iob = list(spread_i(crf_s(segs)))
+        iob = crf_s(segs)
+        if args.spread:
+            iob = spread_i(iob)
+        iob_list = list(iob)
         with open(args.csv, "wt") as outfh:
-            write_csv(iob, outfh)
-    annotate_pdf(args.doc, pages, iob, args.out.with_suffix(".pdf"))
+            write_csv(iob_list, outfh)
+    annotate_pdf(args.doc, pages, iob_list, args.out.with_suffix(".pdf"))
 
 
 if __name__ == "__main__":

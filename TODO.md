@@ -5,7 +5,12 @@ DATA
 - Eliminate use of CDN / pure
 - Correct titles in zonage glossary
 - Correct extraction (see below, use RNN) of titles numbers etc
-- Redo alexi download to not use wget (httpx is nice)
+- Retag everything with PLAYA converter
+  - Retag patches first
+  - Retag small bylaws (PPCMOI et compagnie) next
+- Optimize PLAYA table/figure extraction which is way too slow
+- Write script to verify sequentiality of articles, sections, chapters
+- Improve features using PLAYA
 
 DERP LERNING
 ------------
@@ -14,7 +19,7 @@ Indexing/matching/clustering
 ============================
 
 - SentenceTransformers for indexing / retrieval
-  - Version of alexi index that indexes all the things for multiple municipalities
+  - Version of alexi index that indexes all the things for multiple municipalities DONE?
   - New command: alexi embed - does the same thing but with STs
 - Quick qualitative evaluation of dense retrieval
 
