@@ -86,8 +86,10 @@ def make_word(obj: TextObject, text: str, bbox: Rect) -> T_obj:
     }
     if obj.gstate.font is not None:
         word["fontname"] = obj.gstate.font.fontname
-    if obj.parent is not None:
+    try:
         word["tagstack"] = get_tagstack(obj.parent)
+    except (TypeError, AttributeError):
+        pass
     if obj.mcs is not None:
         word["mctag"] = obj.mcs.tag
     if obj.mcid is not None:
