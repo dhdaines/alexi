@@ -32,7 +32,8 @@ def make_blocs(el: Element, pages: Dict[Page, Dict[int, Rect]]) -> Iterator[Bloc
     dans l'ensemble de pages recherchées"""
     if el.page is not None and el.page not in pages:
         return
-    LOGGER.info("%s on pages:", el.type)
+    role = el.role
+    LOGGER.info("%s on pages:", role)
     for page, items in itertools.groupby(
         content_items(el), operator.attrgetter("page")
     ):
@@ -45,12 +46,13 @@ def make_blocs(el: Element, pages: Dict[Page, Dict[int, Rect]]) -> Iterator[Bloc
         bbox = cast(
             Rect,
             tuple(
-                int(round(x)) for x in get_bound_rects(boxes[mcid] for mcid in mcids)
+                int(round(x))
+                for x in get_bound_rects(boxes[mcid] for mcid in mcids if mcid in boxes)
             ),
         )
         LOGGER.info("Got BBox on page %d from contents: %r", page.page_idx + 1, bbox)
         yield Bloc(
-            type="Tableau" if el.type == "Table" else el.type,
+            type="Tableau" if role == "Table" else role,
             contenu=[],
             _page_number=page.page_idx + 1,
             _bbox=bbox,
