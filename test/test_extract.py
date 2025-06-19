@@ -1,13 +1,14 @@
 from pathlib import Path
 
 from alexi.extract import Extracteur
+from alexi.recognize.playa import ObjetsPlaya
 
 DATADIR = Path(__file__).parent / "data"
 TRAINDIR = Path(__file__).parent.parent / "data"
 
 
 def test_extracteur(tmp_path: Path):
-    extracteur = Extracteur(tmp_path)
+    extracteur = Extracteur(tmp_path, object_model=ObjetsPlaya)
     doc = extracteur(DATADIR / "zonage_zones.pdf")
     docdir = tmp_path / "zonage_zones"
     assert (docdir / "img").is_dir()
