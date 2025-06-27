@@ -202,6 +202,39 @@ def make_index_html(
         outfh.write(HTML_FOOTER)
 
 
+class save_images_one:
+    def __init__(self, images: dict[int, list[Bloc]], docdir: Path, dpi: int) -> None:
+        self.images = images
+        self.docdir = docdir
+        self.dpi = dpi
+        self.scale = dpi / 72
+
+    def __call__(self, page: playa.Page) -> None:
+        image_blocs = self.images[page.page_idx + 1]
+        boxes = []
+        for bloc in image_blocs:
+            x0, top, x1, bottom = bloc.bbox
+            if x0 == x1 or top == bottom:
+                LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
+                continue
+            img_path = self.docdir / bloc.img
+            if img_path.exists():
+                LOGGER.info("Skipping existing image file %s", img_path)
+                continue
+            x0 = max(0, x0) * self.scale
+            top = max(0, top) * self.scale
+            x1 = min(page.width, x1) * self.scale
+            bottom = min(page.height, bottom) * self.scale
+            boxes.append((img_path, (x0, top, x1, bottom)))
+        if len(boxes) == 0:
+            return
+        image = pi.show(page, dpi=self.dpi)
+        for img_path, box in boxes:
+            LOGGER.info("Extraction de %s", img_path)
+            fig = image.crop(box)
+            fig.save(img_path)
+
+
 def save_images_from_pdf(
     blocs: list[Bloc], pdf_path: Path, docdir: Path, dpi: int = 150
 ):
@@ -213,33 +246,11 @@ def save_images_from_pdf(
         if bloc.type in ("Tableau", "Figure"):
             assert isinstance(bloc.page_number, int)
             images.setdefault(bloc.page_number, []).append(bloc)
-    pdf = playa.open(pdf_path)
-    scale = dpi / 72
-    for page_number, image_blocs in images.items():
-        page = pdf.pages[page_number - 1]
-        boxes = []
-        for bloc in image_blocs:
-            x0, top, x1, bottom = bloc.bbox
-            if x0 == x1 or top == bottom:
-                LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
-                continue
-            img_path = docdir / bloc.img
-            if img_path.exists():
-                LOGGER.info("Skipping existing image file %s", img_path)
-                continue
-            x0 = max(0, x0) * scale
-            top = max(0, top) * scale
-            x1 = min(page.width, x1) * scale
-            bottom = min(page.height, bottom) * scale
-            boxes.append((img_path, (x0, top, x1, bottom)))
-        if len(boxes) == 0:
-            continue
-        image = pi.show(page, dpi=dpi)
-        for img_path, box in boxes:
-            LOGGER.info("Extraction de %s", img_path)
-            fig = image.crop(box)
-            fig.save(img_path)
-    pdf.close()
+    ncpu = os.cpu_count()
+    ncpu = 1 if ncpu is None else round(ncpu / 2)
+    with playa.open(pdf_path, max_workers=ncpu) as pdf:
+        pagelist = pdf.pages[(page_number - 1 for page_number in images)]
+        pagelist.map(save_images_one(images, docdir, dpi))
 
 
 def make_redirect(path: Path, target: Path):
