@@ -67,7 +67,7 @@ def line_break(glyph: GlyphObject, origin: Point) -> bool:
             line_offset = -dy
         else:
             line_offset = dy
-    return line_offset < 0
+    return line_offset < 0 or line_offset > 100  # FIXME: arbitrary!
 
 
 def make_word(obj: TextObject, text: str, bbox: Rect) -> T_obj:
