@@ -2,7 +2,7 @@ import csv
 from pathlib import Path
 
 from alexi.analyse import Analyseur, extract_zonage, group_iob
-from alexi.recognize import Objets
+from alexi.recognize.playa import ObjetsPlaya as Objets
 
 DATADIR = Path(__file__).parent / "data"
 TRAINDIR = Path(__file__).parent.parent / "data"

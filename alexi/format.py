@@ -38,6 +38,7 @@ def line_breaks(paragraph: Sequence[T_obj]) -> Iterator[list[T_obj]]:
 TAG = {
     "Document": "body",
     "Annexe": "section",
+    "TitreS": "section",
     "Chapitre": "section",
     "Section": "section",
     "SousSection": "section",
@@ -46,10 +47,20 @@ TAG = {
 HEADER = {
     "Document": "h1",
     "Annexe": "h1",
+    "TitreS": "h1",
     "Chapitre": "h1",
     "Section": "h2",
     "SousSection": "h3",
     "Article": "h4",
+}
+NAME = {
+    "Document": "Document",
+    "Annexe": "Annexe",
+    "TitreS": "Titre",
+    "Chapitre": "Chapitre",
+    "Section": "Section",
+    "SousSection": "Sous-Section",
+    "Article": "Article",
 }
 BLOC = {
     "Tete": "",
@@ -115,11 +126,13 @@ class HtmlFormatter:
         sp = " " * indent
         tag = TAG[el.type]
         header = HEADER[el.type]
+        elname = NAME[el.type]
         lines = []
         LOGGER.debug("%s%s %s: %d-%d", off, el.type, el.numero, el.debut, el.fin)
         if tag != "body":
             lines.append(f'{off}<{tag} class="{el.type}">')
         if el.numero and offset:
+            # FIXME: anchors are not needed in HTML5
             lines.append(
                 f'{off}{sp}<a class="anchor" name="{el.type}/{el.numero}"></a>'
             )
@@ -127,7 +140,7 @@ class HtmlFormatter:
             lines.append(f'{off}{sp}<{header} class="header">')
             if el.type != "Document":
                 if el.numero[0] != "_":
-                    lines.append(f'{off}{sp}{sp}<span class="level">{el.type}</span>')
+                    lines.append(f'{off}{sp}{sp}<span class="level">{elname}</span>')
                     lines.append(
                         f'{off}{sp}{sp}<span class="number">{el.numero}</span>'
                     )

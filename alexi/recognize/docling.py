@@ -39,7 +39,7 @@ class ObjetsDocling(Objets):
     def __init__(
         self,
         model_path: Union[str, PathLike, None] = None,
-        device: str = "cpu",
+        torch_device: str = "cpu",
         num_threads: int = 4,
         base_threshold: float = 0.3,
     ) -> None:
@@ -49,7 +49,7 @@ class ObjetsDocling(Objets):
             model_path = Path(model_path)
         self.model = LayoutPredictor(
             str(model_path),
-            device=device,
+            device=torch_device,
             num_threads=num_threads,
             base_threshold=base_threshold,
         )

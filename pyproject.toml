@@ -16,7 +16,6 @@ dependencies = [
     "joblib",
     "httpx",
     "lxml",
-    "pdfplumber",
     "playa-pdf>=0.6",
     "paves>=0.5",
     "scikit-learn",
@@ -36,12 +35,9 @@ dev = [
   "pytest",
   "pytest-cov",
 ]
-yolo = [
-    "huggingface-hub",
-    "ultralytics",
-]
 docling = [
     "docling-ibm-models>=3.3.1",
+    "pypdfium2",
 ]
 api = [
     "fastapi[standard]",
@@ -90,6 +86,10 @@ format = [
   "isort alexi test",
 ]
 train = [
+"""python scripts/train_crf.py \\
+    --features text+layout+structure --labels bonly \\
+    --outfile test/data/model.gz \\
+    test/data/pdf_structure.csv""",
 """python scripts/train_crf.py \\
     --features text+layout+structure --labels bonly \\
     --outfile alexi/models/crf.joblib.gz \\

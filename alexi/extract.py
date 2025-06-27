@@ -18,8 +18,7 @@ from natsort import natsorted
 
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
 from alexi.convert import Converteur, T_obj
-from alexi.convert_playa import Converteur as ConverteurPlaya
-from alexi.format import HtmlFormatter
+from alexi.format import NAME, HtmlFormatter
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.link import Resolver
@@ -63,9 +62,14 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "-O",
         "--object-model",
-        choices=["none", "playa", "docling", "yolo"],
-        default="none",
+        choices=["playa", "docling"],
+        default="playa",
         help="Modele pour detection d'objects",
+    )
+    parser.add_argument(
+        "--torch-device",
+        default="cpu",
+        help="Device (cpu, cuda, etc) pour traitement avec modeles docling",
     )
     parser.add_argument(
         "docs", help="Documents en PDF ou CSV pré-annoté", type=Path, nargs="+"
@@ -173,12 +177,13 @@ def make_index_html(
     off = "    "
     sp = "  "
     for el in elements:
+        elname = NAME.get(el.type, el.type)
         lines.append(f"{off}{sp}<li>")
         if el.numero[0] == "_":
-            titre = el.titre if el.titre else f"{el.type} (numéro inconnu)"
+            titre = el.titre if el.titre else f"{elname} (numéro inconnu)"
         else:
             lines.append(f'{off}{sp}{sp}<span class="number">{el.numero}</span>')
-            titre = el.titre if el.titre else f"{el.type} {el.numero}"
+            titre = el.titre if el.titre else f"{elname} {el.numero}"
         lines.append(
             f'{off}{sp}{sp}<a href="{el.numero}/index.html" class="title">{titre}</a>'
         )
@@ -197,6 +202,39 @@ def make_index_html(
         outfh.write(HTML_FOOTER)
 
 
+class save_images_one:
+    def __init__(self, images: dict[int, list[Bloc]], docdir: Path, dpi: int) -> None:
+        self.images = images
+        self.docdir = docdir
+        self.dpi = dpi
+        self.scale = dpi / 72
+
+    def __call__(self, page: playa.Page) -> None:
+        image_blocs = self.images[page.page_idx + 1]
+        boxes = []
+        for bloc in image_blocs:
+            x0, top, x1, bottom = bloc.bbox
+            if x0 == x1 or top == bottom:
+                LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
+                continue
+            img_path = self.docdir / bloc.img
+            if img_path.exists():
+                LOGGER.info("Skipping existing image file %s", img_path)
+                continue
+            x0 = max(0, x0) * self.scale
+            top = max(0, top) * self.scale
+            x1 = min(page.width, x1) * self.scale
+            bottom = min(page.height, bottom) * self.scale
+            boxes.append((img_path, (x0, top, x1, bottom)))
+        if len(boxes) == 0:
+            return
+        image = pi.show(page, dpi=self.dpi)
+        for img_path, box in boxes:
+            LOGGER.info("Extraction de %s", img_path)
+            fig = image.crop(box)
+            fig.save(img_path)
+
+
 def save_images_from_pdf(
     blocs: list[Bloc], pdf_path: Path, docdir: Path, dpi: int = 150
 ):
@@ -208,33 +246,11 @@ def save_images_from_pdf(
         if bloc.type in ("Tableau", "Figure"):
             assert isinstance(bloc.page_number, int)
             images.setdefault(bloc.page_number, []).append(bloc)
-    pdf = playa.open(pdf_path)
-    scale = dpi / 72
-    for page_number, image_blocs in images.items():
-        page = pdf.pages[page_number - 1]
-        boxes = []
-        for bloc in image_blocs:
-            x0, top, x1, bottom = bloc.bbox
-            if x0 == x1 or top == bottom:
-                LOGGER.warning("Skipping empty image bbox %s", bloc.bbox)
-                continue
-            img_path = docdir / bloc.img
-            if img_path.exists():
-                LOGGER.info("Skipping existing image file %s", img_path)
-                continue
-            x0 = max(0, x0) * scale
-            top = max(0, top) * scale
-            x1 = min(page.width, x1) * scale
-            bottom = min(page.height, bottom) * scale
-            boxes.append((img_path, (x0, top, x1, bottom)))
-        if len(boxes) == 0:
-            continue
-        image = pi.show(page, dpi=dpi)
-        for img_path, box in boxes:
-            LOGGER.info("Extraction de %s", img_path)
-            fig = image.crop(box)
-            fig.save(img_path)
-    pdf.close()
+    ncpu = os.cpu_count()
+    ncpu = 1 if ncpu is None else round(ncpu / 2)
+    with playa.open(pdf_path, max_workers=ncpu) as pdf:
+        pagelist = pdf.pages[(page_number - 1 for page_number in images)]
+        pagelist.map(save_images_one(images, docdir, dpi))
 
 
 def make_redirect(path: Path, target: Path):
@@ -274,16 +290,17 @@ def make_doc_subtree(doc: Document, outfh: TextIO):
             eldir = Path(doc.fileid, el.type, el.numero)
         else:
             eldir = Path(doc.fileid, *parts, el.type, el.numero)
+        elname = NAME.get(el.type, el.type)
         if el.numero[0] == "_":
             if el.titre:
                 eltitre = el.titre
             else:
-                eltitre = el.type
+                eltitre = elname
         else:
             if el.titre:
-                eltitre = f"{el.type} {el.numero}: {el.titre}"
+                eltitre = f"{elname} {el.numero}: {el.titre}"
             else:
-                eltitre = f"{el.type} {el.numero}"
+                eltitre = f"{elname} {el.numero}"
         level = len(parts) // 2
         while level < prev_level:
             outfh.write("</ul></details></li>\n")
@@ -378,6 +395,7 @@ class Extracteur:
         no_csv=False,
         no_images=False,
         object_model: Union[Type["Objets"], None] = None,
+        torch_device: str = "cpu",
     ):
         from alexi.recognize import Objets
 
@@ -386,7 +404,7 @@ class Extracteur:
 
         self.outdir = outdir
         self.crf_s = Identificateur()
-        self.obj = object_model()
+        self.obj = object_model(torch_device=torch_device)
         if segment_model is not None:
             self.crf = Segmenteur(segment_model)
             self.crf_n = None
@@ -411,7 +429,7 @@ class Extracteur:
         if self.pdfdata and pdf_path.name not in self.pdfdata:
             LOGGER.warning("Non-traitement de %s car absent des metadonnées", path)
             return None
-        conv: Union[Converteur, ConverteurPlaya, None] = None
+        conv: Union[Converteur, None] = None
         if path.suffix == ".csv":
             LOGGER.info("Lecture de %s", path)
             iob = list(read_csv(path))
@@ -421,15 +439,9 @@ class Extracteur:
                 LOGGER.info("Lecture de %s", csvpath)
                 iob = list(read_csv(csvpath))
             else:
-                from alexi.recognize.playa import ObjetsPlaya
-
                 LOGGER.info("Conversion, segmentation et classification de %s", path)
-                if isinstance(self.obj, ObjetsPlaya):
-                    conv = ConverteurPlaya(path)
-                    feats = conv.extract_words()
-                else:
-                    conv = Converteur(path)
-                    feats = conv.extract_words()
+                conv = Converteur(path)
+                feats = conv.extract_words()
                 crf = self.crf
                 if conv.tree is None:
                     LOGGER.warning("Structure logique absente: %s", path)
@@ -455,7 +467,10 @@ class Extracteur:
         if pdf_path and not self.no_images:
             LOGGER.info("Extraction d'images sous %s", imgdir)
             imgdir.mkdir(parents=True, exist_ok=True)
-            images = self.obj(pdf_path, labelmap=LABELMAP)
+            images = self.obj(
+                pdf_path,
+                labelmap=LABELMAP,
+            )
             analyseur.add_images(images)
             save_images_from_pdf(analyseur.blocs, pdf_path, imgdir)
         LOGGER.info("Analyse de la structure de %s", fileid)
@@ -495,12 +510,13 @@ class Extracteur:
         off = "    "
         sp = "  "
         for el in elements:
+            elname = NAME.get(el.type, el.type)
             lines.append(f"{off}{sp}<li>")
             if el.numero[0] == "_":
-                titre = el.titre if el.titre else f"{el.type} (numéro inconnu)"
+                titre = el.titre if el.titre else f"{elname} (numéro inconnu)"
             else:
                 lines.append(f'{off}{sp}{sp}<span class="number">{el.numero}</span>')
-                titre = el.titre if el.titre else f"{el.type} {el.numero}"
+                titre = el.titre if el.titre else f"{elname} {el.numero}"
             lines.append(
                 f'{off}{sp}{sp}<a href="{el.numero}/index.html" '
                 f'class="title">{titre}</a>'
@@ -616,6 +632,7 @@ def main(args) -> None:
         no_csv=args.no_csv,
         no_images=args.no_images,
         object_model=Objets.byname(args.object_model),
+        torch_device=args.torch_device,
     )
     docs = []
     for path in args.docs:

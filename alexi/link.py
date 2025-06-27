@@ -151,7 +151,7 @@ class Resolver:
         Rajouter des prefix manquants pour un lien relatif.
         """
         # Top-level section types
-        if dest[0] in ("Chapitre", "Article", "Annexe"):
+        if dest[0] in ("TitreS", "Chapitre", "Article", "Annexe"):
             return dest
         # Only fully qualified destinations are possible
         if src[0] == "Annexe":

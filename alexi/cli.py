@@ -11,7 +11,6 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Union
 
 LOGGER = logging.getLogger("alexi")
 
@@ -19,16 +18,12 @@ LOGGER = logging.getLogger("alexi")
 def convert_main(args: argparse.Namespace):
     """Convertir les PDF en CSV"""
     from .convert import Converteur, write_csv
-    from .convert_playa import Converteur as ConverteurPlaya
 
     if args.pages:
         pages = [max(1, int(x)) for x in args.pages.split(",")]
     else:
         pages = None
-    if args.playa:
-        conv: Union[Converteur, ConverteurPlaya] = ConverteurPlaya(args.pdf)
-    else:
-        conv = Converteur(args.pdf)
+    conv = Converteur(args.pdf)
     words = conv.extract_words(pages)
     write_csv(words, sys.stdout)
 
@@ -116,7 +111,6 @@ def make_argparse() -> argparse.ArgumentParser:
     convert.add_argument(
         "--pages", help="Liste de numéros de page à extraire, séparés par virgule"
     )
-    convert.add_argument("--playa", help="Utiliser PLAYA", action="store_true")
     convert.set_defaults(func=convert_main)
 
     segment = subp.add_parser(
