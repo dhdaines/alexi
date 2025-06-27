@@ -7,9 +7,8 @@ DATADIR = Path(__file__).parent / "data"
 
 
 def test_convert() -> None:
-    with open(DATADIR / "pdf_structure.pdf", "rb") as infh:
-        conv = Converteur(infh)
-        words = list(conv.extract_words())
+    conv = Converteur(DATADIR / "pdf_structure.pdf")
+    words = list(conv.extract_words())
     assert len(words) > 0
     with open(DATADIR / "pdf_structure.csv", "rt") as infh:
         reader = csv.DictReader(infh)

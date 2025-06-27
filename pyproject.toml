@@ -87,6 +87,10 @@ format = [
 train = [
 """python scripts/train_crf.py \\
     --features text+layout+structure --labels bonly \\
+    --outfile test/data/model.gz \\
+    test/data/pdf_structure.csv""",
+"""python scripts/train_crf.py \\
+    --features text+layout+structure --labels bonly \\
     --outfile alexi/models/crf.joblib.gz \\
     data/*.csv data/patches/*.csv""",
 """python scripts/train_crf.py \\
