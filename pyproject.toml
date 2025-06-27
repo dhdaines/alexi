@@ -37,6 +37,7 @@ dev = [
 ]
 docling = [
     "docling-ibm-models>=3.3.1",
+    "pypdfium2",
 ]
 api = [
     "fastapi[standard]",
