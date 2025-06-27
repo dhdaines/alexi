@@ -22,5 +22,5 @@ alexi -v download -u https://www.vss.ca/services-aux-citoyens/services/reglement
       -o download/vss --all-links -x '[Aa]nnexe'
 alexi -v download -u https://www.ville.prevost.qc.ca/guichet-citoyen/services/urbanisme/ \
       -o download/prevost --all-links -x Annexe -x Formulaires -x PUMD -x PMAD
-# alexi -v download -u https://www.laval.ca/reglements-permis/index-reglements/code-urbanisme/ --all-links \
-#        -o download/laval -x annexe
+alexi -v download -u https://www.laval.ca/reglements-permis/index-reglements/code-urbanisme/ --all-links \
+       -o download/laval -x annexe
