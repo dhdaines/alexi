@@ -222,7 +222,7 @@ def bonly(_, word):
     return "-".join((bio, name))
 
 
-TITRES = {"Article", "Chapitre", "Section", "SousSection", "Titre"}
+TITRES = {"Article", "TitreS", "Chapitre", "Section", "SousSection", "Titre"}
 
 
 def tonly(_, word):

@@ -19,7 +19,7 @@ from natsort import natsorted
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
 from alexi.convert import Converteur, T_obj
 from alexi.convert_playa import Converteur as ConverteurPlaya
-from alexi.format import HtmlFormatter
+from alexi.format import HtmlFormatter, NAME
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.link import Resolver
@@ -173,12 +173,13 @@ def make_index_html(
     off = "    "
     sp = "  "
     for el in elements:
+        elname = NAME.get(el.type, el.type)
         lines.append(f"{off}{sp}<li>")
         if el.numero[0] == "_":
-            titre = el.titre if el.titre else f"{el.type} (numéro inconnu)"
+            titre = el.titre if el.titre else f"{elname} (numéro inconnu)"
         else:
             lines.append(f'{off}{sp}{sp}<span class="number">{el.numero}</span>')
-            titre = el.titre if el.titre else f"{el.type} {el.numero}"
+            titre = el.titre if el.titre else f"{elname} {el.numero}"
         lines.append(
             f'{off}{sp}{sp}<a href="{el.numero}/index.html" class="title">{titre}</a>'
         )
@@ -274,16 +275,17 @@ def make_doc_subtree(doc: Document, outfh: TextIO):
             eldir = Path(doc.fileid, el.type, el.numero)
         else:
             eldir = Path(doc.fileid, *parts, el.type, el.numero)
+        elname = NAME.get(el.type, el.type)
         if el.numero[0] == "_":
             if el.titre:
                 eltitre = el.titre
             else:
-                eltitre = el.type
+                eltitre = elname
         else:
             if el.titre:
-                eltitre = f"{el.type} {el.numero}: {el.titre}"
+                eltitre = f"{elname} {el.numero}: {el.titre}"
             else:
-                eltitre = f"{el.type} {el.numero}"
+                eltitre = f"{elname} {el.numero}"
         level = len(parts) // 2
         while level < prev_level:
             outfh.write("</ul></details></li>\n")
@@ -495,12 +497,13 @@ class Extracteur:
         off = "    "
         sp = "  "
         for el in elements:
+            elname = NAME.get(el.type, el.type)
             lines.append(f"{off}{sp}<li>")
             if el.numero[0] == "_":
-                titre = el.titre if el.titre else f"{el.type} (numéro inconnu)"
+                titre = el.titre if el.titre else f"{elname} (numéro inconnu)"
             else:
                 lines.append(f'{off}{sp}{sp}<span class="number">{el.numero}</span>')
-                titre = el.titre if el.titre else f"{el.type} {el.numero}"
+                titre = el.titre if el.titre else f"{elname} {el.numero}"
             lines.append(
                 f'{off}{sp}{sp}<a href="{el.numero}/index.html" '
                 f'class="title">{titre}</a>'

@@ -89,7 +89,7 @@ def annotate_pdf(
                 x0 - 1, y - 1, width + 2, height + 2
             )
             pdfium_c.FPDFPath_SetDrawMode(path, pdfium_c.FPDF_FILLMODE_NONE, True)
-            if bloc.type in ("Chapitre", "Annexe"):  # Rouge
+            if bloc.type in ("TitreS", "Chapitre", "Annexe"):  # Rouge
                 pdfium_c.FPDFPageObj_SetStrokeColor(path, 255, 0, 0, 255)
             elif bloc.type == "Section":  # Rose foncé
                 pdfium_c.FPDFPageObj_SetStrokeColor(path, 255, 50, 50, 255)
