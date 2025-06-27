@@ -33,13 +33,32 @@ def load_model_from_hub() -> Path:
     return Path(weights_path).parent
 
 
+class convert_page:
+    """Not a partial function, but a partial function."""
+
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+
+    def __call__(self, page: playa.Page):
+        scale_x = page.width / self.width
+        scale_y = page.height / self.height
+
+        return (
+            page.page_idx + 1,
+            scale_x,
+            scale_y,
+            next(pi.convert(page, width=self.width, height=self.height)),
+        )
+
+
 class ObjetsDocling(Objets):
     """Détecteur d'objects textuels utilisant RT-DETR."""
 
     def __init__(
         self,
         model_path: Union[str, PathLike, None] = None,
-        device: str = "cpu",
+        torch_device: str = "cpu",
         num_threads: int = 4,
         base_threshold: float = 0.3,
     ) -> None:
@@ -49,7 +68,7 @@ class ObjetsDocling(Objets):
             model_path = Path(model_path)
         self.model = LayoutPredictor(
             str(model_path),
-            device=device,
+            device=torch_device,
             num_threads=num_threads,
             base_threshold=base_threshold,
         )

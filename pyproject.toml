@@ -35,10 +35,6 @@ dev = [
   "pytest",
   "pytest-cov",
 ]
-yolo = [
-    "huggingface-hub",
-    "ultralytics",
-]
 docling = [
     "docling-ibm-models>=3.3.1",
 ]

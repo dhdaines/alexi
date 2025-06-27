@@ -62,9 +62,14 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "-O",
         "--object-model",
-        choices=["playa", "docling", "yolo"],
+        choices=["playa", "docling"],
         default="playa",
         help="Modele pour detection d'objects",
+    )
+    parser.add_argument(
+        "--torch-device",
+        default="cpu",
+        help="Device (cpu, cuda, etc) pour traitement avec modeles docling",
     )
     parser.add_argument(
         "docs", help="Documents en PDF ou CSV pré-annoté", type=Path, nargs="+"
@@ -379,6 +384,7 @@ class Extracteur:
         no_csv=False,
         no_images=False,
         object_model: Union[Type["Objets"], None] = None,
+        torch_device: str = "cpu",
     ):
         from alexi.recognize import Objets
 
@@ -387,7 +393,7 @@ class Extracteur:
 
         self.outdir = outdir
         self.crf_s = Identificateur()
-        self.obj = object_model()
+        self.obj = object_model(torch_device=torch_device)
         if segment_model is not None:
             self.crf = Segmenteur(segment_model)
             self.crf_n = None
@@ -615,6 +621,7 @@ def main(args) -> None:
         no_csv=args.no_csv,
         no_images=args.no_images,
         object_model=Objets.byname(args.object_model),
+        torch_device=args.torch_device,
     )
     docs = []
     for path in args.docs:
