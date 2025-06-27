@@ -18,7 +18,6 @@ from natsort import natsorted
 
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
 from alexi.convert import Converteur, T_obj
-from alexi.convert_playa import Converteur as ConverteurPlaya
 from alexi.format import HtmlFormatter, NAME
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
@@ -63,8 +62,8 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "-O",
         "--object-model",
-        choices=["none", "playa", "docling", "yolo"],
-        default="none",
+        choices=["playa", "docling", "yolo"],
+        default="playa",
         help="Modele pour detection d'objects",
     )
     parser.add_argument(
@@ -413,7 +412,7 @@ class Extracteur:
         if self.pdfdata and pdf_path.name not in self.pdfdata:
             LOGGER.warning("Non-traitement de %s car absent des metadonnées", path)
             return None
-        conv: Union[Converteur, ConverteurPlaya, None] = None
+        conv: Union[Converteur, None] = None
         if path.suffix == ".csv":
             LOGGER.info("Lecture de %s", path)
             iob = list(read_csv(path))
@@ -423,15 +422,9 @@ class Extracteur:
                 LOGGER.info("Lecture de %s", csvpath)
                 iob = list(read_csv(csvpath))
             else:
-                from alexi.recognize.playa import ObjetsPlaya
-
                 LOGGER.info("Conversion, segmentation et classification de %s", path)
-                if isinstance(self.obj, ObjetsPlaya):
-                    conv = ConverteurPlaya(path)
-                    feats = conv.extract_words()
-                else:
-                    conv = Converteur(path)
-                    feats = conv.extract_words()
+                conv = Converteur(path)
+                feats = conv.extract_words()
                 crf = self.crf
                 if conv.tree is None:
                     LOGGER.warning("Structure logique absente: %s", path)

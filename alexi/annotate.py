@@ -12,7 +12,6 @@ from typing import Any, Iterable, Iterator, Union
 
 from alexi.analyse import group_iob
 from alexi.convert import Converteur, T_obj, write_csv
-from alexi.convert_playa import Converteur as ConverteurPlaya
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.segment import DEFAULT_MODEL as DEFAULT_SEGMENT_MODEL
@@ -43,7 +42,6 @@ def add_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "--force", action="store_true", help="Réécrire le fichier CSV même si existant"
     )
-    parser.add_argument("--playa", help="Utiliser PLAYA", action="store_true")
     parser.add_argument("--spread", help="Marquer segments sur I", action="store_true")
     parser.add_argument("doc", help="Document en PDF", type=Path)
     parser.add_argument("out", help="Nom de base des fichiers de sortie", type=Path)
@@ -173,10 +171,7 @@ def main(args: argparse.Namespace) -> None:
             crf = Segmenteur(DEFAULT_SEGMENT_MODEL)
             crf_n = Segmenteur(DEFAULT_MODEL_NOSTRUCT)
         crf_s = Identificateur(args.label_model)
-        if args.playa:
-            conv: Union[Converteur, ConverteurPlaya] = ConverteurPlaya(args.doc)
-        else:
-            conv = Converteur(args.doc)
+        conv = Converteur(args.doc)
         feats = conv.extract_words(pages)
         if conv.tree is None:
             LOGGER.warning("Structure logique absente: %s", args.doc)
