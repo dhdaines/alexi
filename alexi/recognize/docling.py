@@ -1,13 +1,12 @@
 """Analyse de mise en page avec modèle RT-DETR de IBM (Docling)"""
 
 import logging
-from os import PathLike, cpu_count
+from os import PathLike
 from pathlib import Path
 from typing import Iterable, Iterator, Union
 
-import paves.image as pi
-import playa
 from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor
+from pypdfium2 import PdfDocument, PdfPage  # type: ignore
 
 from alexi.analyse import Bloc
 from alexi.recognize import Objets
@@ -15,9 +14,9 @@ from alexi.recognize import Objets
 LOGGER = logging.getLogger(Path(__file__).stem)
 
 
-def scale_to_model(page: playa.Page, modeldim: float):
+def scale_to_model(page: PdfPage, modeldim: float):
     """Find scaling factor for model dimension."""
-    mindim = min(page.width, page.height)
+    mindim = min(page.get_width(), page.get_height())
     return modeldim / mindim
 
 
@@ -32,25 +31,6 @@ def load_model_from_hub() -> Path:
         "ds4sd/docling-models", "model_artifacts/layout/model.safetensors"
     )
     return Path(weights_path).parent
-
-
-class convert_page:
-    """Not a partial function, but a partial function."""
-
-    def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-
-    def __call__(self, page: playa.Page):
-        scale_x = page.width / self.width
-        scale_y = page.height / self.height
-
-        return (
-            page.page_idx + 1,
-            scale_x,
-            scale_y,
-            next(pi.convert(page, width=self.width, height=self.height)),
-        )
 
 
 class ObjetsDocling(Objets):
@@ -81,43 +61,41 @@ class ObjetsDocling(Objets):
         pages: Union[None, Iterable[int]] = None,
         labelmap: Union[dict, None] = None,
     ) -> Iterator[Bloc]:
-        ncpu = cpu_count()
-        ncpu = 1 if ncpu is None else round(ncpu / 2)
-        with playa.open(pdf_path, max_workers=ncpu) as pdf:
-            pdfpages = pdf.pages if pages is None else pdf.pages[pages]
-            modeldim = self.model_info["image_size"]
-            for page_number, scale_x, scale_y, image in pdfpages.map(
-                convert_page(width=modeldim, height=modeldim)
-            ):
+        pdf_path = Path(pdf_path)
+        pdf = PdfDocument(pdf_path)
+        if pages is None:
+            pages = range(1, len(pdf) + 1)
+        for page_number in pages:
+            page = pdf[page_number - 1]
+            scale = scale_to_model(page, self.model_info["image_size"])
+            image = page.render(scale=scale).to_pil()
 
-                def boxsort(box):
-                    """Sort by topmost-leftmost-tallest-widest."""
-                    return (
-                        box["t"],
-                        box["l"],
-                        -(box["b"] - box["t"]),
-                        -(box["r"] - box["l"]),
+            def boxsort(box):
+                """Sort by topmost-leftmost-tallest-widest."""
+                return (
+                    box["t"],
+                    box["l"],
+                    -(box["b"] - box["t"]),
+                    -(box["r"] - box["l"]),
+                )
+
+            boxes = sorted(self.model.predict(image), key=boxsort)
+            for box in boxes:
+                if labelmap is None or box["label"] in labelmap:
+                    bbox = tuple(
+                        round(x / scale)
+                        for x in (box["l"], box["t"], box["r"], box["b"])
                     )
-
-                boxes = sorted(self.model.predict(image), key=boxsort)
-                for box in boxes:
-                    if labelmap is None or box["label"] in labelmap:
-                        bbox = (
-                            round(box["l"] * scale_x),
-                            round(box["t"] * scale_y),
-                            round(box["r"] * scale_x),
-                            round(box["b"] * scale_y),
-                        )
-                        yield Bloc(
-                            type=(
-                                box["label"]
-                                if labelmap is None
-                                else labelmap[box["label"]]
-                            ),
-                            contenu=[],
-                            _page_number=page_number,
-                            _bbox=bbox,
-                        )
+                    yield Bloc(
+                        type=(
+                            box["label"] if labelmap is None else labelmap[box["label"]]
+                        ),
+                        contenu=[],
+                        _page_number=page_number,
+                        _bbox=bbox,
+                    )
+            page.close()
+        pdf.close()
 
 
 def main():
