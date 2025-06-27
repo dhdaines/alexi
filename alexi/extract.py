@@ -18,7 +18,7 @@ from natsort import natsorted
 
 from alexi.analyse import Analyseur, Bloc, Document, Element, extract_zonage
 from alexi.convert import Converteur, T_obj
-from alexi.format import HtmlFormatter, NAME
+from alexi.format import NAME, HtmlFormatter
 from alexi.label import DEFAULT_MODEL as DEFAULT_LABEL_MODEL
 from alexi.label import Identificateur
 from alexi.link import Resolver
@@ -450,7 +450,10 @@ class Extracteur:
         if pdf_path and not self.no_images:
             LOGGER.info("Extraction d'images sous %s", imgdir)
             imgdir.mkdir(parents=True, exist_ok=True)
-            images = self.obj(pdf_path, labelmap=LABELMAP)
+            images = self.obj(
+                pdf_path,
+                labelmap=LABELMAP,
+            )
             analyseur.add_images(images)
             save_images_from_pdf(analyseur.blocs, pdf_path, imgdir)
         LOGGER.info("Analyse de la structure de %s", fileid)

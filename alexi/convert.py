@@ -114,7 +114,9 @@ def make_word(obj: TextObject, text: str, bbox: Rect) -> T_obj:
     if obj.gstate.font is not None:
         word["fontname"] = obj.gstate.font.fontname
     try:
-        word["tagstack"] = get_tagstack(obj.parent)
+        parent = obj.parent
+        if parent is not None:
+            word["tagstack"] = get_tagstack(parent)
     except (TypeError, AttributeError):
         pass
     if obj.mcs is not None:
@@ -164,7 +166,9 @@ class Converteur:
     tree: Union[Tree, None]
 
     def __init__(self, path: Path):
-        self.pdf = playa.open(path, max_workers=round(cpu_count() / 2))
+        ncpu = cpu_count()
+        ncpu = 1 if ncpu is None else round(ncpu / 2)
+        self.pdf = playa.open(path, max_workers=ncpu)
         self.tree = self.pdf.structure
 
     def extract_words(self, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
