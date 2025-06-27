@@ -54,10 +54,3 @@ def test_extract_tables_and_figures_docling() -> None:
             assert "Table" in w["tagstack"]
         if bbox_contains(figure.bbox, obj_to_bbox(w)):
             assert "Figure" in w["tagstack"]
-
-
-if __name__ == "__main__":
-    test_extract_tables_and_figures()
-    test_extract_tables_and_figures_playa()
-    test_extract_tables_and_figures_yolo()
-    test_extract_tables_and_figures_docling()
