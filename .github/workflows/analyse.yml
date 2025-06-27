@@ -28,6 +28,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install -e .
+        sudo apt-get install poppler-utils
     - name: Cache downloads
       id: cache-downloads
       uses: actions/cache@v4
