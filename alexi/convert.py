@@ -3,8 +3,7 @@
 import csv
 import itertools
 import logging
-from os import cpu_count
-from pathlib import Path
+from os import PathLike, cpu_count
 from typing import Any, Dict, Iterable, Iterator, List, TextIO, Union
 
 import playa
@@ -165,10 +164,13 @@ class Converteur:
     pdf: playa.Document
     tree: Union[Tree, None]
 
-    def __init__(self, path: Path):
+    def __init__(self, pdf: Union[str, PathLike, playa.Document]):
         ncpu = cpu_count()
         ncpu = 1 if ncpu is None else round(ncpu / 2)
-        self.pdf = playa.open(path, max_workers=ncpu)
+        if isinstance(pdf, playa.Document):
+            self.pdf = pdf
+        else:
+            self.pdf = playa.open(pdf, max_workers=ncpu)
         self.tree = self.pdf.structure
 
     def extract_words(self, pages: Union[List[int], None] = None) -> Iterator[T_obj]:
