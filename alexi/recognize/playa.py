@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, Iterable, Iterator, Union, cast
 
 import playa
-from playa import Page
+from playa import Document, Page, PageList
 from playa.pdftypes import Rect
 from playa.structure import ContentItem, Element
 from playa.utils import get_bound_rects
@@ -66,27 +66,35 @@ def get_mcid_boxes(page: Page) -> Dict[int, Rect]:
     return boxes
 
 
+def pagelist_boxes(pdf: Document, pagelist: Iterable[Page]) -> Iterator[Bloc]:
+    if pdf.structure is None:
+        return
+    LOGGER.info("Calcul des rectangles de contenu sur pages")
+    if isinstance(pagelist, PageList):
+        mcid_boxes = pagelist.map(get_mcid_boxes)
+    else:
+        mcid_boxes = map(get_mcid_boxes, pagelist)
+    page_boxes = {page: boxes for page, boxes in zip(pagelist, mcid_boxes)}
+    LOGGER.info("Extraction des éléments visuels:")
+    for el in pdf.structure.find_all(re.compile("^(?:Table|Figure)$")):
+        yield from make_blocs(el, page_boxes)
+
+
 class ObjetsPlaya(Objets):
     def __call__(
         self,
-        pdf_path: Union[str, PathLike],
+        pdf_or_path: Union[str, Page, PageList, PathLike],
         pages: Union[None, Iterable[int]] = None,
         labelmap: Union[None, dict] = None,
     ) -> Iterator[Bloc]:
         """Extraire les rectangles correspondant aux objets qui seront
         représentés par des images."""
-        pdf_path = Path(pdf_path)
         ncpu = cpu_count()
         ncpu = 1 if ncpu is None else round(ncpu / 2)
-        with playa.open(pdf_path, max_workers=ncpu) as pdf:
-            if pdf.structure is None:
-                return
+        if isinstance(pdf_or_path, Page):
+            return pagelist_boxes(pdf_or_path.doc, [pdf_or_path])
+        elif isinstance(pdf_or_path, PageList):
+            return pagelist_boxes(pdf_or_path.doc, pdf_or_path)
+        with playa.open(pdf_or_path, max_workers=ncpu) as pdf:
             pagelist = pdf.pages if pages is None else pdf.pages[(x - 1 for x in pages)]
-            LOGGER.info("Calcul des rectangles de contenu sur pages")
-            page_boxes = {
-                page: boxes
-                for page, boxes in zip(pagelist, pagelist.map(get_mcid_boxes))
-            }
-            LOGGER.info("Extraction des éléments visuels:")
-            for el in pdf.structure.find_all(re.compile("^(?:Table|Figure)$")):
-                yield from make_blocs(el, page_boxes)
+            return pagelist_boxes(pdf, pagelist)
