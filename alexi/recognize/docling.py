@@ -24,11 +24,19 @@ def load_model_from_hub() -> Path:
     from huggingface_hub import hf_hub_download  # type: ignore[import-untyped]
 
     hf_hub_download(
-        "ds4sd/docling-models", "model_artifacts/layout/preprocessor_config.json"
+        repo_id="ds4sd/docling-models",
+        filename="model_artifacts/layout/preprocessor_config.json",
+        revision="v2.2.0",
     )
-    hf_hub_download("ds4sd/docling-models", "model_artifacts/layout/config.json")
+    hf_hub_download(
+        repo_id="ds4sd/docling-models",
+        filename="model_artifacts/layout/config.json",
+        revision="v2.2.0",
+    )
     weights_path = hf_hub_download(
-        "ds4sd/docling-models", "model_artifacts/layout/model.safetensors"
+        repo_id="ds4sd/docling-models",
+        filename="model_artifacts/layout/model.safetensors",
+        revision="v2.2.0",
     )
     return Path(weights_path).parent
 
