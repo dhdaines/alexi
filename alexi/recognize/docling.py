@@ -14,8 +14,12 @@ from alexi.recognize import Objets
 LOGGER = logging.getLogger(Path(__file__).stem)
 
 
-def scale_to_model(page: PdfPage, modeldim: float):
+def scale_to_model(page: PdfPage, modeldim: Union[float, dict]):
     """Find scaling factor for model dimension."""
+    if isinstance(modeldim, dict):
+        width = modeldim.get("width", 640)
+        height = modeldim.get("height", 640)
+        return min(page.get_width() / width, page.get_height() / height)
     mindim = min(page.get_width(), page.get_height())
     return modeldim / mindim
 
